@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Conference Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0F1117;
+      --surface: #181C26;
+      --surface2: #1E2230;
+      --border: #2A2F40;
+      --accent: #E8A838;
+      --accent2: #5B8AF0;
+      --text-primary: #EDF0F7;
+      --text-secondary: #8A90A4;
+      --text-muted: #555C72;
+      --cell-min-w: 120px;
+      --row-header-w: 150px;
+      --cell-h: 80px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 2.5rem 2rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .conf-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    header h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
+      font-weight: 400;
+      line-height: 1.1;
+    }
+
+    .header-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.35rem;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .search-wrap { position: relative; }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    #search {
+      padding: 0.6rem 0.9rem 0.6rem 2.4rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.82rem;
+      color: var(--text-primary);
+      outline: none;
+      width: 220px;
+      transition: border-color 0.2s;
+    }
+
+    #search:focus { border-color: var(--accent); }
+    #search::placeholder { color: var(--text-muted); }
+
+    .filter-sep {
+      width: 1px; height: 20px;
+      background: var(--border);
+      margin: 0 0.25rem;
+    }
+
+    .filter-btn {
+      padding: 0.45rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .filter-group-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      white-space: nowrap;
+      align-self: center;
+    }
+
+    .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #0F1117; font-weight: 600; }
+
+    .day-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      overflow-x: auto;
+    }
+
+    .day-tab {
+      padding: 0.85rem 1.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .day-tab:hover { color: var(--text-primary); }
+    .day-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .timetable-outer {
+      overflow-x: auto;
+      padding: 1rem 2rem 3rem;
+    }
+
+    .building-section {
+      margin-bottom: 2rem;
+    }
+
+    .building-heading {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      padding: 0.6rem 0 0.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
+    }
+
+    .timetable {
+      display: grid;
+      min-width: max-content;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .t-corner {
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+    }
+
+    .t-time-header {
+      background: var(--surface2);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+    }
+
+    .t-time-header:last-child { border-right: none; }
+
+    .t-loc-header {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .loc-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: normal;
+      line-height: 1.3;
+    }
+
+    .loc-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .t-cell {
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      position: relative;
+      min-height: var(--cell-h);
+      padding: 0;
+    }
+
+    .t-cell.stacked {
+      position: static;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 3px;
+      height: auto;
+      min-height: var(--cell-h);
+    }
+
+    .t-cell.stacked .session-pill {
+      position: relative;
+      inset: auto;
+      flex-shrink: 0;
+      min-height: 52px;
+    }
+
+    .t-cell.empty {
+      background: repeating-linear-gradient(
+        45deg,
+        transparent, transparent 8px,
+        rgba(255,255,255,0.012) 8px,
+        rgba(255,255,255,0.012) 9px
+      );
+    }
+
+    .session-pill {
+      position: absolute;
+      inset: 4px;
+      border-radius: 6px;
+      padding: 0.4rem 0.55rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      overflow: hidden;
+    }
+
+    .session-pill::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      border-radius: 7px 0 0 7px;
+    }
+
+    .session-pill:hover {
+      transform: scale(1.02);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 10;
+    }
+
+    .track-keynote     { background: rgba(232,168,56,0.14); }
+    .track-keynote::before     { background: #E8A838; }
+    .track-design      { background: rgba(91,138,240,0.14); }
+    .track-design::before      { background: #5B8AF0; }
+    .track-engineering { background: rgba(80,200,150,0.12); }
+    .track-engineering::before { background: #50C896; }
+    .track-research    { background: rgba(190,100,220,0.12); }
+    .track-research::before    { background: #BE64DC; }
+    .track-ai          { background: rgba(240,100,130,0.12); }
+    .track-ai::before          { background: #F06482; }
+    .track-break       { background: rgba(255,255,255,0.04); }
+    .track-break::before       { background: var(--text-muted); }
+    .track-default     { background: rgba(255,255,255,0.05); }
+    .track-default::before     { background: var(--text-muted); }
+
+        /* === Event Type Colors (quick inference) === */
+    .type-keynote     { background: rgba(232,168,56,0.16); }
+    .type-keynote::before     { background: #E8A838; }
+
+    .type-panel       { background: rgba(91,138,240,0.16); }
+    .type-panel::before       { background: #5B8AF0; }
+
+    .type-fireside    { background: rgba(240,100,130,0.16); }
+    .type-fireside::before    { background: #F06482; }
+
+    .type-workshop    { background: rgba(80,200,150,0.14); }
+    .type-workshop::before    { background: #50C896; }
+
+    .type-roundtable  { background: rgba(190,100,220,0.14); }
+    .type-roundtable::before  { background: #BE64DC; }
+
+    .type-break       { background: rgba(255,255,255,0.04); }
+    .type-break::before       { background: var(--text-muted); }
+
+    .type-launch      { background: rgba(255,180,80,0.14); }
+    .type-launch::before      { background: #FFB450; }
+
+    .type-default     { background: rgba(255,255,255,0.05); }
+    .type-default::before     { background: var(--text-muted); }
+
+    .pill-track {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.52rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .pill-title {
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--text-primary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .pill-speakers {
+      font-size: 0.63rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .session-pill.dimmed {
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    /* MODAL */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 520px;
+      width: 100%;
+      padding: 2rem;
+      position: relative;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(16px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1rem;
+      transition: color 0.15s;
+    }
+
+    .modal-close:hover { color: var(--text-primary); }
+
+    .modal-track {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+
+    .modal-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      line-height: 1.25;
+      margin-bottom: 1rem;
+    }
+
+    .modal-speakers-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .modal-speaker {
+      background: rgba(232,168,56,0.1);
+      border: 1px solid rgba(232,168,56,0.2);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.25rem 0.65rem;
+      border-radius: 4px;
+    }
+
+    .modal-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .modal-desc {
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      font-weight: 300;
+      border-top: 1px solid var(--border);
+      padding-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="conf-label" id="conf-label"></div>
+    <h1 id="conf-title"></h1>
+    <div class="header-meta" id="conf-meta"></div>
+  </div>
+  <div class="controls">
+    <div class="search-wrap">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search" placeholder="Search sessions, speakers…" autocomplete="off" />
+    </div>
+    <div id="filters" style="display:none"></div>
+  </div>
+</header>
+
+<div class="day-tabs" id="day-tabs"></div>
+<div class="timetable-outer">
+  <div id="timetable-container"></div>
+</div>
+
+  <div style="font-size:0.85rem;color:var(--text-muted);text-align:center;max-width:380px;line-height:1.6;">
+    Upload the CSV exported from Web Scraper.<br>
+    Expected columns: <code style="color:var(--accent)">title, time, building, room, desc, partner, speaker_list, date</code>
+  </div>
+  <label style="
+    cursor:pointer;padding:0.85rem 2rem;
+    background:var(--accent);color:#0F1117;
+    border-radius:8px;font-weight:600;font-size:0.9rem;
+    transition:opacity 0.15s;
+  " onmouseover="this.style.opacity=0.85" onmouseout="this.style.opacity=1">
+    Choose CSV file
+    <input type="file" accept=".csv" id="csv-input" style="display:none" />
+  </label>
+  <div id="upload-error" style="color:#F06482;font-size:0.8rem;display:none;"></div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-track" id="m-track"></div>
+    <div class="modal-title" id="m-title"></div>
+    <div class="modal-speakers-list" id="m-speakers"></div>
+    <div class="modal-meta" id="m-meta"></div>
+    <div class="modal-desc" id="m-desc"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════
+const CONFIG = {
+  title: "India AI Impact Summit 2026",
+  label: "India AI Impact Summit · New Delhi",
+  meta:  "20 Feb 2026 · Click any session for details",
+};
+
+// Time slots shown as columns — auto-generated from data, but
+// you can override by setting this to an explicit array instead of null
+const TIME_SLOTS_OVERRIDE = null;
+
+// ══════════════════════════════════════════════════
+//  EMBEDDED DATA (pre-processed from CSV)
+// ══════════════════════════════════════════════════
+const EMBEDDED_DATA = {"sessions": [{"title": "The AI-Cyber Nexus: A Strategic Dialogue on Global Security, Trust, and Governance", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "Chanakya Auditorium", "building": "Sushma Swaraj Bhawan", "track": "Access Now", "description": "This session, will apply the triad of Confidentiality, Integrity, and Availability (CIA) to the complex challenges posed by large language models (LLMs) and Agentic AI. It will present learnings from technology developers, civil society, policymakers, and diplomats that can provide an informed, fact-based approach to how cybersecurity policy and AI governance are interconnected.", "speakers": ["Alejandro Mayoral Banos, Access Now", "Anne Marie Engtoft Meldgaard, Ministry of Foreign Affairs of Denmark", "Maria Paz Canales, Global Partners Digital", "Nirmal John, Economic Times", "Raman Jit Singh Chima, Access Now", "Nikolas Schmidt, AI and Emerging Digital Technologies Division, OECD", "Udbhav Tiwari, Signal"]}, {"title": "AI Capacity Building - Scaling Knowledge, Driving Innovation", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "Chanakya Auditorium", "building": "Sushma Swaraj Bhawan", "track": "Indo-Pacific European Hub for Digital Partnerships (INPACE)", "description": "As AI rapidly reshapes education and research, academic institutions face growing challenges in integrating AI literacy, advanced skills, and ethical readiness into curricula and research programs. This workshop addresses these challenges by bringing together academic leaders, researchers, and standards bodies to explore scalable, interoperable frameworks for AI capacity building.", "speakers": ["Dr. Mohammed Misbahuddin, C-DAC Bangalore", "Dr. S D Sudarsan, C-DAC Bangalore", "Mr. Ramesh Naidu Laveti, C-DAC Bangalore", "Mr. Srikanth Chandrasekaran, IEEE"]}, {"title": "AI and Workforce Transformation: India's Roadmap to Global Competitiveness", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "Chanakya Auditorium", "building": "Sushma Swaraj Bhawan", "track": "Nasscom", "description": "This session will explore how AI is reshaping jobs, skills, and productivity, and how India can convert this disruption into a strategic advantage. It will examine the evolving AI skills landscape and discuss how to build inclusive, AI-native talent pipelines through skilling, reskilling, vernacular learning, and stronger industry–academia collaboration. Bringing together policymakers, industry leaders, academia, and SMEs, the session will also highlight role of private industry in positioning India as a globally competitive hub for AI talent.", "speakers": ["Mr Ravi Aurora, Mastercard Inc.", "Mr Srikrishna Ramakarthikeyan, Hexaware", "Mr Vishnu R Dusad, Nucleus Software", "Ms Sangeeta Gupta, Nasscom", "Sue Daley OBE, techUK"]}, {"title": "AI at the Core, 6G at the Edge: Designing India's Next Resilient, Innovative and Efficient Digital Frontier", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "Chanakya Auditorium", "building": "Sushma Swaraj Bhawan", "track": "Nasscom", "description": "The panel discussion situates India's opportunity at the intersection of these two forces: AI providing cognition, autonomy, and predictive intelligence, while 6G provides real-time sensing, extreme reliability, and pervasive connectivity across terrestrial, aerial, maritime, and satellite systems. In this emerging paradigm, networks themselves become AI-native—the radio interface, the RAN, the core, and the edge begin to reason, adapt, self-organize, and optimize through multi-agent intelligence", "speakers": ["Radhakant Das, Tata Consultancy Services", "Rajesh Kumar Pathak, Bharat 6G Alliance, New Delhi", "Sandeep Sharma, Tech Mahindra", "Sanjay Nekkanti, Dhruva Space Pvt. Ltd."]}, {"title": "Panel Discussion: Reimagining AI and STEM Education for India's Next Generation", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "Chanakya Auditorium", "building": "Sushma Swaraj Bhawan", "track": "Primus Partners", "description": "AI is poised to  accelerate India's economic growth, positioning the country to become a trillion-dollar digital economy by 2030,  by preparing the next generation to contribute meaningfully to Viksit Bharat. This session aims to explore best practices and evolving models in AI and STEM education across curriculum design, pedagogy, teacher capacity, and infrastructure with ethical, and inclusive use of AI at its core.", "speakers": ["Abhijeet Upponi, Submer", "Ajay Data, Data Group of Industries", "Dr Raj Kumar, O.P. Jindal Global University (JGU)", "Gauri Agarwal, Koyal AI", "Sanjay Jain, Google", "Shri Narendra Bhooshan (IAS), Departments of Technical Education, Energy and Additional Energy, Government of Uttar Pradesh", "Yashmit Kedia, ChimeraVC"]}, {"title": "AI for Economic Growth and Social Good- Industry Synergies for Inclusive Innovation- Fireside Chat", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "Chanakya Auditorium", "building": "Sushma Swaraj Bhawan", "track": "T-Hub Foundation", "description": "AI for Economic Growth & Social Good: Industry Synergies for Inclusive Innovation is a high-level, solutions-oriented panel bringing together government, multilaterals, industry leaders, and innovation ecosystems to translate India's AI ambition into real-world impact. The session spotlights deployable AI use-cases across healthcare, agriculture, skilling, mobility, and financial inclusion, emphasizing responsible AI, blended finance, and cross-sector partnerships to scale beyond pilots toward measurable, population-level outcomes aligned with the IndiaAI Mission", "speakers": ["Himanshu Joshi, AIM", "Kavikrut, T-Hub Foundation", "Kritika Sangani, Indus Action", "Phani Nagarjuna, (TBD)Aikam, Govt. of Telangana", "Rajesh Babu Padmanabhan, Agilisium", "Rekha Srinivasan, United Way of Hyderabad"]}, {"title": "ElevenLabs Voice AI Session & NCRB/NPM Fireside Chat (Hosted by Bhashini)", "startTime": "12:00 PM", "endTime": "1:00 PM", "day": "20 Feb 2026", "location": "Hall No. 3 First Floor - Conference Room 4", "building": "Bharat Mandapam - Expo Area", "track": "Bhashini", "description": "This combined session begins with a presentation by Ms. Mati Staniszewski on advances in Voice AI technologies, including natural speech synthesis, multilingual voice interfaces, and real-time audio intelligence. The session demonstrates how voice technologies can accelerate accessibility, content creation, and human-AI interaction across languages. The subsequent fireside chat involving DG NCRB/NPM (as referenced in the agenda) focuses on the role of AI-powered voice and language systems in public safety, citizen services, and digital governance. The discussion highlights how speech technologies integrated with BHASHINI can improve accessibility of public information and support multilingual service delivery at scale. The session showcases the transformative role of voice AI in bridging literacy and language barriers.", "speakers": ["Ms. Mati Staniszewski"]}, {"title": "Fireside Chat: From Data Centres to Dialects — Scaling Sovereign Language AI for a Billion Voices (Hosted by Bhashini)", "startTime": "11:00 AM", "endTime": "12:00 PM", "day": "20 Feb 2026", "location": "Hall No. 3 First Floor - Conference Room 4", "building": "Bharat Mandapam - Expo Area", "track": "Bhashini", "description": "This strategic fireside chat focuses on the journey from infrastructure to impact — examining how sovereign AI systems can scale from centralized data centres to support diverse dialects and languages across India. The discussion highlights the importance of national AI capacity, open datasets, speech technologies, and collaborative ecosystems in building robust multilingual AI solutions. It also explores how BHASHINI is enabling scalable, secure, and interoperable language services that empower citizens, developers, and institutions alike.  The session aims to frame India's approach to sovereign language AI as a model for large- scale inclusive digital transformation.", "speakers": ["Mrs. Padma Bhamidipati", "Mr. Akshay Beerala", "Mr. Chaithanya Kothapalli", "Mr. Amit Gupta", "Mr. Suresh Babu"]}, {"title": "GIZ Policy Report & Developer Toolkit Launch (Hosted by Bhashini)", "startTime": "10:00 AM", "endTime": "11:00 AM", "day": "20 Feb 2026", "location": "Hall No. 3 First Floor - Conference Room 4", "building": "Bharat Mandapam - Expo Area", "track": "Bhashini", "description": "This session marks the formal launch of a Policy Report and Developer's Toolkit prepared in collaboration with GIZ and international partners. The launch reflects growing global cooperation in advancing multilingual AI and open digital ecosystems. The policy report outlines strategic approaches for building inclusive language technologies, while the developer toolkit provides practical resources to enable innovators, startups, and public agencies to integrate multilingual AI capabilities into applications. Participation of the German delegation highlights international interest in India's language DPI model and opportunities for cross-country collaboration in AI governance, research, and technology deployment.", "speakers": ["K S Vishwanathan, DSCI", "Suket Amin, Sunbots", "Padmashree Shagrithaya"]}, {"title": "Nepal Engagement Session (Hosted by Bhashini)", "startTime": "2:00 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "Hall No. 3 First Floor - Conference Room 4", "building": "Bharat Mandapam - Expo Area", "track": "Bhashini", "description": "This session explores potential collaboration between BHASHINI and stakeholders from Nepal on multilingual AI and language digital public infrastructure. The discussion is expected to focus on knowledge sharing, technical cooperation, and adoption of language technologies for Nepali and regional languages. The engagement reflects BHASHINI's growing international relevance as a scalable model for language inclusion and AI-driven public digital services. It aims to identify opportunities for cross-border collaboration in research, datasets, and deployment of language AI tools to strengthen regional digital ecosystems.", "speakers": ["Sh. Pravin Anand - Managing Partner, Anand & Anand", "Sh. Amit Kapoor - Founder & CEO, OneStack", "Sh. Mayank Gupta - Cp-Founder, Zoppr", "Sh. Santosh Bhat - Chief Data Scientist & Head of Advance Technology, Policy Bazaar", "Sh. Vineet Singh - Co Founder & CEO, Castler", "Sh. Hemant Kohli - Angel Investor and Serial Entrepreneur"]}, {"title": "AI for Safer Workplaces & Smarter Industries: Transforming Risk into Real-Time Intelligence (Hosted by Benchmark Gensuite)", "startTime": "11:30 AM", "endTime": "1:00 PM", "day": "20 Feb 2026", "location": "Hall No. 4 First Floor - Conference Room 2", "building": "Bharat Mandapam - Expo Area", "track": "Benchmark Gensuite", "description": "This session explores how AI is transforming workplace safety and the spaces around us from reactive compliance to real-time predictive intelligence. Designed as a truly hands-on experience, it goes far beyond a traditional talk and invites participants to actively engage in live demonstrations, collaborative discussions, and practical walkthroughs to experience AI in action. Packed with powerful insights and real-world applications, the session highlights how AI can be effectively leveraged to address everyday safety challenges, strengthen decision-making, and build smarter, safer, and more resilient environments", "speakers": ["Naveen GV, Chief Global COE Officer & Managing Director", "Chandan T, Senior Director, P and L and Global COE"]}, {"title": "Educating for Viksit Bharat: Why Creativity, Cognition & Culture Matter", "startTime": "2:00 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "Hall No. 4 First Floor - Conference Room 2", "building": "Bharat Mandapam - Expo Area", "track": "CODE Edu Pvt Ltd", "description": "", "speakers": []}, {"title": "Accelerate safe AI at scale (Hosted by IndiaTech)", "startTime": "10:00 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "Hall No. 4 First Floor - Conference Room 2", "building": "Bharat Mandapam - Expo Area", "track": "IndiaTech", "description": "Discover what's possible when data resilience, data security, and AI trust act as one — empowering organizations to innovate faster, reduce risk and unlock measurable business value.", "speakers": ["Sandeep Bhambure, Vice President and Managing Director, Veeam INDIA & SAARC", "Dr. Abhay Sinha, Director General, Services Export Promotion Council (SEPC), Ministry of Corporate Affairs", "Golok Kumar Simli, President Technology and Innovation, BLS International", "Dhiraj Gyani, Chief Operating Officer, Technology Services Industry Association", "Mohd Ujaley, Editorial Director, Tech Observer Magazine"]}, {"title": "NextGen AI: Skills, Safety, and Social Value — technical mastery aligned with ethical standards(Hosted by STPI)", "startTime": "11:30 AM", "endTime": "1:00 PM", "day": "20 Feb 2026", "location": "Hall No. 4 First Floor - Conference Room 3", "building": "Bharat Mandapam - Expo Area", "track": "STPI", "description": "Equip participants with practical AI skills and ethical frameworks to build socially beneficial systems. Through hands‑on labs, bias audits, explainability toolkits, and industry mentorship, the program blends technical training with governance and deployment best practices—culminating in portfolio-ready capstones that prioritize safety, fairness, and measurable social impact.", "speakers": ["Prof.(Dr.) Alok Pandey, Dean, O.P. Jindal Global University", "Prof. Jawar Singh, IIT Patna", "Sh. Devendra Singh, DDG , TEC, Department of Telecommunications", "Dr. Sarabjot Singh Anand, Co-Founder, Tartras Data, Head-Sabudh Foundation", "Mr. Kunal Gupta, MD, Mount Talant Consulting Pvt. Ltd., Delhi", "Mr. Vikash Srivastava, Chief Growth Strategist, Vinsys IT Services Pvt. Ltd.", "Sh. Subodh Sachan, Director, STPI-HQ"]}, {"title": "Future of AI DataCenter", "startTime": "10:00 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "Hall No. 4 First Floor - Conference Room 3", "building": "Bharat Mandapam - Expo Area", "track": "Velankani Information System Pvt Ltd", "description": "AI workloads are driving explosive growth in data center power density—racks now routinely hit 100+ kW (vs. traditional 10–20 kW), with megawatt-scale clusters and facilities demanding hundreds of MW. Power demand from global data centers is projected to rise 50–165% by 2030, largely due to AI.  The AI era is forcing a fundamental redesign—native HVDC distribution + liquid cooling will make high-density, sustainable AI infrastructure possible at scale, dramatically cutting losses, material use, and operational costs compared to legacy designs. The transition is already underway among hyperscalers and will become standard within 3–5 years.  Velankani Group is a leader in making Indigenous AI Data Center Infrastructure which will cater the demand for the Future.", "speakers": ["Aadit Shah , Director - Velankani Information system PVT LTD", "Vibhor Iyer , Design Head- Velankani Information system PVT LTD"]}, {"title": "Need and Impact of Full Stack Sovereign AI", "startTime": "10:00 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "Hall No. 5 First Floor - Conference Room 1", "building": "Bharat Mandapam - Expo Area", "track": "CoRover  | BharatGPT", "description": "", "speakers": ["Ankush Sabharwal, Founder, CoRover AI & BharatGPT", "A. S. Lakshminarayanan, MD and CEO, Tata Communications", "Raghav chadha, CA & Member of Parliament", "Amish Devagon, Managing Editor, News18 India", "Sudeesh VC Nambiar, CEO, IRCTC Payments limited", "Akanksha Swarup, Indian News Anchor & Foreign Policy Journalist", "Nitin Gupta, Education & Health Leader, Google"]}, {"title": "Scaling Innovation: Building a Robust AI Startup Ecosystem", "startTime": "2:00 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "Hall No. 5 First Floor - Conference Room 1", "building": "Bharat Mandapam - Expo Area", "track": "STPI & TiE", "description": "The session will deliberate on the national imperative of building a robust and future-ready AI startup ecosystem, highlighting STPI's role through its pan-India startup support framework, structured programmes, and digital enablement platforms that foster a connected innovation landscape. It will also underscore the contribution of Global Capability Centres and the National Productivity Council in strengthening productivity standards, industry alignment, and capability development to support scalable AI enterprises.  During the session, select technology startups supported under the STPI ecosystem will be felicitated at the AI Impact Summit for their demonstrated innovation, scalability, and measurable outcomes.  The recognition will cover startups leveraging artificial intelligence and other advanced digital technologies, with validated impact in terms of revenue growth, employment generation, and sectoral contribution, including emerging success stories from Tier-II and Tier-III regions contributing to India's innovation-led digital economy.", "speakers": ["Ms. Neerja Sekhar, IAS, DG, NPC", "Sh. Bala MS, GCC Leader & CEO Stratinfinity Inc", "Ms. Geetika Dayal, Director General, TiE", "Sh. Ashok Gupta, Director, STPI-Gurugram", "Sh. Rakesh Dubey, STPI-HQ"]}, {"title": "Designing the AI Factory: Scaling Compute to Sovereign AI (Hosted by NVIDIA | VERTIV)", "startTime": "11:30 AM", "endTime": "1:00 PM", "day": "20 Feb 2026", "location": "Hall No. 5 First Floor - Conference Room 1", "building": "Bharat Mandapam - Expo Area", "track": "Vertiv", "description": "Focuses on the dramatic evolution of AI infrastructure as compute demand scales from kilowatt‑level racks to gigawatt‑scale facilities. It explores how specialized, high‑density AI data centers", "speakers": ["Sanjay Sainani", "Giordano Albertazzi", "Marc Hamilton", "Peter Panfil", "Srikanth Cherukiri", "Shrirang Deshpande"]}, {"title": "AI led Hyperautomation in BFSI", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 16", "building": "Bharat Mandapam", "track": "IndiaAI", "description": "This panel will examine how artificial intelligence-driven hyperautomation is reshaping banking, financial services and insurance. Panelists will discuss leveraging AI-ML and LLMs to transform customer onboarding, credit decisioning, fraud detection, compliance and customer engagement. The conversation will focus on secure, explainable AI, scalable architecture, strong governance, measurable ROI and workforce reskilling to deliver compliant, efficient and highly personalized financial services.", "speakers": ["Ruchika Panesar, Natwest Group", "Prashant Garg, EY India", "Dr. Pankaj Dikshit, Cygnet.One", "Sanjiv Bajaj, Bajaj Capital", "Aakrit Vaish, Activate AI", "Eric Grimson, MIT"]}, {"title": "AI-fueled Enterprise Transformation", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 16", "building": "Bharat Mandapam", "track": "IndiaAI", "description": "This panel will explore how organizations can turn AI ambition into enterprise-scale transformation - prioritizing high-impact use cases across supply chain, finance, audit and customer experience while redesigning operating models to integrate domain experts with AI teams. The discussion will cover scalable data and technology foundations, governance and risk controls, measurable ROI, workforce reskilling, and build-vs-buy strategies to convert pilots into secure, reusable AI platforms that deliver tangible business outcomes.", "speakers": ["Mahesh Makhija, EY India", "Suma R Chander, PKF O'Connor Davies", "Nitin Mittal, Deloitte US", "Nischal Gupta, GMR", "Dr. Ambica Rajagopal, Michelin"]}, {"title": "AI for Resilience: Closing the Technology Adoption Gap in Disaster Risk Reduction in Context of Early Warning Systems", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 17", "building": "Bharat Mandapam", "track": "National Disaster Management Authority", "description": "The escalating frequency & intensity of climate related disasters present an existential threat to communities worldwide. AI offers a transformative, untapped potential to revolutionize EWS by processing massive datasets, enhancing predictive accuracy and accelerating warning dissemination.  With India being a global pioneer in AI, leveraging its vast data and diverse talent pool, this session during the India AI Summit, calls for accelerated integration of AI to bridge technology adoption gap, ensuring disaster resilience for all.", "speakers": ["⁠Dr. Krishna S Vatsa, Government of India.", "Mr. Kamal Kishore, UNDRR", "Mr. Martin Krause, UNEP", "H. E. Dr Avinash RRamtohul Minister for Information Technology, Communication and Innovation, Republic of Mauritius", "Ms. Elizabeth Atwell, British High Commission", "⁠Mr. Som Satsangi, HPE", "⁠Mr. Sujit Kumar Mohanty, UNDRR"]}, {"title": "The 360° AI Stack: Scaling Intelligence through Infrastructure, Investment, and Integrity", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "IndiaAI", "description": "This panel presents a practical, cross-sector blueprint for scaling artificial intelligence by aligning technical capabilities, capital allocation, legal frameworks and infrastructure. Panelists will examine how robust data engineering and production-grade model pipelines translate into investable business models, how investors filter technical promise from sustainable economics, and how legal and policy regimes for data and intellectual property shape commercialisation pathways. The discussion brings together operator, investor, legal and infrastructure perspectives to surface concrete steps that synchronise funding rounds, regulatory compliance and platform upgrades for durable AI scale-up.", "speakers": ["Dr. Tarak Woddi, Anicca Data Science", "Paolo Benanti, Vatican", "Amita Chaudhary, UN Finance Initiative Principles of Sustainable Insurance", "Dr Ajai Kumar Garg, Anand and Anand", "Nilachal Mishra, KPMG", "Ankan De, EY"]}, {"title": "Speaking Everyone's Language: The Key to Inclusive AI Opportunity", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "AI for Development Funders Collaborative", "description": "AI promises to transform lives through lifesaving health advice, early warning systems, and food security—but only if it speaks everyone's language. For billions speaking local languages across Africa and Asia, this remains an urgent and critical barrier to inclusive development. Join Global South ministers, UN leaders, technologists, and major funders as they unveil pioneering solutions, positioning linguistic diversity as the gateway to addressing data sovereignty, compute access, and achieving transformative AI equity at scale.", "speakers": ["Ankur Vora, Gates Foundation", "Chenai Chair, Masakhane African Languages Hub", "Hon. David Lammy, Deputy Prime Minister of the UK", "Dr Amandeep Singh Gill, Under-Secretary-General and Special Envoy for Digital and Emerging Technologies", "Dr Bärbel Kofler, Federal Ministry for Economic Cooperation and Development", "Julie Delahanty, International Development Research Centre", "Shekar Sivasubramanian, WadhwaniAI"]}, {"title": "AI-Driven Enforcement: Better Governance through Effective Compliance & Services", "startTime": "4:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "Central Board of Direct Taxes", "description": "AI is transforming enforcement by enabling smarter compliance, better public services, and more responsive governance. This symposium aims to bring together, law enforcement, academia, and industry experts to explore how AI can strengthen institutional capabilities, improve service delivery, and support effective compliance, while promoting responsible adoption within evolving governance frameworks.", "speakers": ["Abhishek Kumar, Central Board of Direct Taxes", "Avneesh Pandey, SEBI", "Harssh A Poddar, Supdt. Of Police, Nagpur Rural", "Martin Wilcox, Teradata", "Mausam, IIT Delhi", "Ram Ganesh, CyberEye", "Ramesh Revuru, LTIMindtree", "Ravi Agrawal, Central Board of Direct Taxes", "Sanjib Sanghi, ICAI", "Shashi Bhushan Shukla, Central Board of Direct Taxes", "Survendu Pati, Reserve Bank of India", "Varunesh Mishra, Central Board of Direct Taxes"]}, {"title": "AI for Democracy: Reimagining Governance in the Age of Intelligence", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "Dev Sanskriti Vishwavidyalya", "description": "This session will examine the evolving role of AI in democratic systems. It will explore how AI can strengthen transparency, accountability, inclusion, and participatory decision-making while remaining grounded in constitutional values and human oversight. It will address applications in public administration and key risks, including bias, privacy, surveillance, and power imbalances, to advance responsible, trust-based AI adoption.", "speakers": ["Dr. Chinmay Pandya, SAIPR, India", "Kanishka Narayan MP, UK Department for Science, Innovation and Technology (DSIT)", "Mr. Lajos Oláh, Hungarian National Assembly", "Mr. Martin Chungong, Inter-Parliamentary Union", "Mr. Om Birla, Parliament of India", "Ms. Jimena Sofía Viveros Álvarez, HumAIn Foundation"]}, {"title": "Smaller Footprint, Bigger Impact: Advancing Resilient and Efficient AI Models for a Sustainable Future", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "French Ministry of Environment", "description": "Generative AI now serves a large number of users daily but comes with significant energy costs, which may contribute to unequal access. Training and inference at scale consume substantial electricity, and research suggests that more efficient model design can reduce energy use significantly. This event highlights resilient, resource-efficient AI leveraging lightweight models, compression, and optimization to reduce energy demand, broaden access, address emerging energy bottlenecks, and support sustainable AI deployment worldwide.", "speakers": ["Dr Tawfik Jelassi, UNESCO", "Mr. Arthur Mensch, Republic of Kenya", "Ms Anne BOUVEROT, Government of France", "Ms Anne LE HENANF, Government of France"]}, {"title": "Multistakeholder Partnerships for Thriving AI Ecosystems", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "German Federal Ministry for Economic Cooperation and Development (BMZ)", "description": "This session demonstrates how multi-stakeholder collaboration on Responsible AI builds inclusive ecosystems and advances sustainable development across health, education, climate resilience, and public sector innovation. It showcases scalable partnership models—such as blended finance, compute sharing, open data, and capacity building—reviews progress since the Hamburg Declaration on Responsible AI for the SDGs, and identifies actionable pathways for future collaboration and impact.", "speakers": ["Arundhati Bhattacharya, Salesforce", "Dr. Bärbel Kofler, Federal Ministry for Economic Cooperation and Development (BMZ)", "Nakul Jain, Wadhwani AI Global", "Robert Opp, United Nations Development Programme (UNDP)"]}, {"title": "Edge AI in Action: Accelerating Development across the Global South", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "International Telecommunication Union", "description": "As AI evolves, the shift from centralized cloud computing to edge AI is transforming how data is processed and acted upon. By moving intelligence closer to data sources such as sensors, mobile devices, and IoT systems, edge AI reduces latency, bandwidth usage, and energy consumption while improving real-time decision-making, privacy, and security. Real-world applications will be highlighted along with emerging lightweight and generative AI models designed for resource-constrained edge environments.", "speakers": ["Alagan Mahalingam, Rootcode", "Dr. Ranjitha Prasad, IIT Delhi", "Dr. Rathinamala Vijay, ARTPARK", "Frederic Werner, International Telecommunication Union", "H.E Amb Lavina Ramkissoon, African Union", "Ms. Doreen Bogdan-Martin, ITU", "Prof Brejesh Lall, IIT Delhi", "Vinesh Sukumar, Qualcomm", "Vishnu Ram OV, ITU"]}, {"title": "Breaking Barriers: Multilingual AI as a Bridge to Democratic Access", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "Swiss Federal Department of Foreign Affairs FDFA", "description": "AI's potential remains limited if it serves only dominant languages, deepening digital divides. This panel, featuring ICAIN and experts from Africa, Europe, and Asia, highlights how multilingual AI can democratize access to technology. It showcases Apertus, an open-source multilingual AI model from ETH Zurich/EPFL, and its real-world applications, emphasizing global collaboration to advance public-interest AI and inclusive innovation.", "speakers": ["Ayah Bdeir, Current AI", "Dr. Amitabh Nag, Bhashini", "Katharina Frey, ICAIN", "Markus Reubi, Federal Department of Foreign Affairs FDFA", "PD Dr. Alex Ilic, ETH AI Center", "Prof. Dr. Annie Hartley, EPFL / Director LiGHT", "Prof. Dr. Petri Myllymäki, ELLIS", "Prof. Jon Wilson, College of Humanities, Arts and Social Sciences, NTU, Singapore", "Prof. Torsten Schwede, Swiss National Science Foundation (SNSF)"]}, {"title": "AI in Negotiations, Diplomacy, and Conflict Management", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "The Move37 Project at the Belfer Center for Science and International Affairs, Harvard Kennedy School", "description": "AI research spans domains from scientific discovery to financial markets, yet attempts to develop, evaluate, and deploy AI in negotiations and diplomatic settings remain sparse. This session will examine efforts in the AI in Negotiation, Diplomacy, and Conflict Management (NDCM) space, urging participants to rethink these tools and imagine a future in which non-human intelligence plays a trusted role in international negotiations.", "speakers": ["Carme Artigas, Belfer Center for Science and International Affairs, High Commissioner Spain-India Dual Year for AI", "Gabriela Ramos, UNESCO", "J. Michael McQuade, HARVARD KENNEDY SCHOOL", "Dr. Nandita Balakrishnan, SCSP", "⁠Robyn Scott, Apolitical", "Charlie Pozniak, Belfer Center, Harvard Kennedy School", "⁠Slavina Ancheva, Belfer Young Leader Fellow, Harvard Kennedy School"]}, {"title": "Small AI for Big Impact", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 10", "building": "Bharat Mandapam", "track": "Wadhwani AI", "description": "Small AI is essential for scaling solutions in the Global South via data-efficient computing, low-resource datasets, and localized edge inference. Grounded in responsible, local contexts, this session provides a roadmap for ML practitioners in India and beyond to achieve scale. Through a technical lens, we examine how affordable, scalable AI deployment can advance UN Sustainable Development Goals (SDGs), offering global leadership and technical insights into driving meaningful social impact through localized, accessible technology.", "speakers": ["Aisha Walcott-Bryant, Google Research Africa", "Alpan Raval, Wadhwani AI", "Antoine Tesniere, PariSanté Campus", "Illango Patchamuthu, Strategy and Operations (Digital & AI), World Bank Group", "Wassim Hamidouche, Microsoft AI for Good Lab", "Zameer Brey, Gates Foundation"]}, {"title": "Responsible AI: From Principles to Practice in Corporate India", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "Adobe", "description": "The panel will explore how organisations can move beyond high-level frameworks and embed Responsible AI into enterprise strategy, governance models, operating practices, and decision-making. Panellists will share leadership perspectives on what it takes to implement Responsible AI at scale — from policy benchmarks, boardroom ownership to organisational readiness, operating models and culture.  The objective would be to enable a more uniform and actionable approach to Responsible AI adoption across Corporate India.", "speakers": ["Amol Deshpande, RPG Group", "Andy Parsons, Adobe", "Dr. Satya Ramaswamy, Air India", "Prativa Mohapatra, Adobe India", "Shantheri Mallaya, Economic Times CIO & CISO.", "Vishal Kanvaty, National Payments Corporation of India (NPCI)"]}, {"title": "AI for Inclusive Societal Development", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "Deloitte Touche Tohmatsu India LLP (DTTILLP)", "description": "Advancing AI systems that are inclusive by design, empowering diverse communities and ensuring equitable representation", "speakers": ["Aditya Natraj, Piramal Foundation", "Ms Arundhati Bhattacharya, Salesforce India and South Asia", "Nikhil Kolur, Deloitte", "NSN Murty, Deloitte", "Romal Shetty, Deloitte South Asia", "S. Anjani Kumar, Deloitte", "Manisha Verma, Dept. of Skill and Employment, Govt. of Maharashtra"]}, {"title": "AI-Ready Data: Shared Infrastructure for Innovation", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "EkStep Foundation", "description": "Data is the backbone of AI innovation. This session focuses on how interoperable, trustworthy, and consent-based data infrastructure can enable AI development while protecting user rights. Speakers will discuss governance frameworks, data-sharing models, and public–private collaboration approaches.", "speakers": ["Rohit Bardawaj, MoSPI", "Dawit Phillipos, Ethiopia ATI", "Ashish Srivastava, A4I, IIIT-B", "Prem Ramaswami, Google", "Shalini Kapoor, EkStep Foundation"]}, {"title": "Agentic AI Roundtable", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "Information Technology Industry Council", "description": "This roundtable will convene senior industry leaders and government officials to examine governance, interoperability, and responsible deployment challenges posed by emerging agentic AI systems capable of autonomous decision-making and adaptive behaviour. Grounded in real-world use cases, the discussion will focus on cybersecurity, enterprise productivity, and autonomous systems. Participants will explore risk-based governance, secure-by-design principles, and the role of open, industry-led technical standards in enabling safe, scalable, and interoperable agentic AI across borders.", "speakers": ["Caroline Louveaux, Mastercard", "Daniel Castro, Information Technology and Innovation Foundation", "Danielle Gilliam-Moore, Salesforce", "Jason Oxman, Information Technology Industry Council", "Mohak Shroff, LinkedIn", "Prith Banerjee, Synopsys", "Sam Kaplan, Palo Alto Networks", "Syam Nair, NetApp"]}, {"title": "Toward Collective Action: A Roundtable on Safe and Trusted AI", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "Tech Governance Project", "description": "This roundtable brings together African policymakers, researchers, civil society, and innovation leaders to discuss safe and trusted AI governance. The focus will be on implementing commitments, enhancing coordination, and addressing underexplored risks, such as cyber, bio, and loss-of-control threats. The session will include opening reflections, a moderated panel, and an interactive Q&A to share insights and identify collaboration pathways, contributing to the India AI Impact Summit outcomes.", "speakers": ["Chinasa T. Okolo, TechneCultura . United Nations office for digital and emerging technologies", "Kola Ijasan, Research ICT Africa", "Mark Gaffley, Global Centre on Governance", "Amb. Philip Thigo, MBS, Kenya", "Prof. Jonathan Shock, University of Cape Town"]}, {"title": "Panel on the 2026 International AI Safety Report", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "UK AI Security Institute", "description": "AI capabilities outpace the evidence-base on impacts and safeguards, creating a dilemma for policymakers: How to act early enough to reduce risk while ensuring progress of effective approaches? Turing Award-winner Yoshua Bengio and global experts will present and discuss the key findings of the International AI Safety Report, an initiative backed by 30+ countries and organizations like the EU, OECD and UN, providing a science-based understanding of general-purpose AI capabilities, emerging risks, and mitigation measures.", "speakers": ["Adam Beaumont, AI Security Institute, United Kingdom", "Alondra Nelson, Institute for Advanced Study", "Josephine Teo, Government of Singapore", "Lee Tiedrich, Inaugural AI Multidisciplinary Initiative Fellow, University of Maryland", "Yoshua Bengio, Université de Montréal; MILA; LawZero"]}, {"title": "Roundtable on Building Global Competitiveness and Shared Prosperity with AI", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "World Economic Forum", "description": "This roundtable will convene senior leaders at stakeholders level for an informal strategic exchange on strengthening AI competitiveness at regional and global levels. The discussion will focus on widening access to sovereign AI capabilities while preserving national choice and policy autonomy, and using regional and international collaboration to reduce dependencies and increase resilience.", "speakers": ["Cathy Li, World Economic Forum"]}, {"title": "Stakeholder Workshop (World Economic Forum): Advancing Safe, Secure and Trustworthy AI Governance", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 15", "building": "Bharat Mandapam", "track": "World Economic Forum", "description": "This semi-private stakeholder dialogue will convene senior public- and private-sector leaders for a focused discussion on advancing practical AI governance. Building on the principles of the Hiroshima AI Process and other global frameworks, the session will explore how shared commitments to safe, secure, and trustworthy AI can be translated into actionable, regionally relevant governance approaches that enable innovation and protect societal interests, as well as strategies for building resilient AI innovation ecosystems through regional collaboration.", "speakers": ["Agustina Callegari, World Economic Forum", "Cathy Li, World Economic Forum", "Samira Gazzane, World Economic Forum"]}, {"title": "MedTech and AI Innovations in Public Health Systems", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 16", "building": "Bharat Mandapam", "track": "Government of Andhra Pradesh", "description": "This session showcases practical deployment experiences, highlighting how AI is transforming disease surveillance, diagnostics, and last-mile delivery in resource-limited settings. Through high-level keynotes, real-world case studies, and a panel discussion on \"From Innovation to Institutionalisation,\" the session explores scalable implementation models, regulatory frameworks, and ethical data governance. By convening policymakers, industry innovators, and administrators, the session defines an actionable roadmap for scaling AI-driven solutions within government infrastructure, fostering high-impact partnerships to strengthen public-health delivery.", "speakers": ["Dr. Rakesh Kalapala, Centre for Obesity and Metabolic Therapy AIG Hospitals, Hyderabad", "Mr. Sanjay Seth, Head of Public Health / Tobacco Control", "Mr. Shiv Kumar, Swasti – Health Catalyst", "Mr. Suhel Bidani, Gates Foundation (India Office)", "Ms. Saraswathi Padmanabhan, Tata Medical & Diagnostics (Tata MD)", "Shri Saurabh Gaur, Health Medical & Family Welfare, Government of Andhra Pradesh", "Shri Saurabh Jain, Ministry of Health & Family Welfare, GoI"]}, {"title": "Harnessing the AI Revolution for Social Empowerment", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 16", "building": "Bharat Mandapam", "track": "JustJobs Network India Pvt. Ltd", "description": "This panel examines how the rapid scale and speed of artificial intelligence adoption is reshaping work, employment, and skill requirements, with a strong focus on inclusive and responsible AI. The discussion brings together diverse perspectives to explore what is required to ensure AI is developed and deployed in ways that minimise labour market disruptions, strengthen workforce resilience, and advance social empowerment - particularly for vulnerable and transitioning worker populations.", "speakers": ["Mr. Anurag Behar, Azim Premji Foundation", "Ms. Julie Delahanty, International Development Research Centre (IDRC), Canada", "Ms. Sabina Dewan, JustJobs Network", "Ms. Sandhya Ramachandran Arun, Wipro Limited"]}, {"title": "AI Diffusion: From Innovation to Population Scale Impact", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 16", "building": "Bharat Mandapam", "track": "Observer Research Foundation", "description": "AI impact depends not on pilots, but on sustained adoption across institutions. While innovation is abundant, diffusion capacity remains limited, leaving organizations to repeat costly experiments. This session introduces AI Diffusion Infrastructure as a shared foundation of standards, playbooks, and trusted pathways that reduce operational and compliance risks. Leaders from technology, government, and development will explore how to scale safe, repeatable AI systems across sectors and geographies, turning isolated successes into equitable population scale outcomes.", "speakers": ["Beatriz Vasconcellos, UCL IIPP / Government of Brazil", "Courtney O'Donnell, Anthropic", "Janet Zhou, Data and Technology Adoption, Gates Foundation", "Keyzom N. Massally, UNDP & G7 AI Hub for Sustainable Development", "Saurabh Garg, MoSPI, GOI", "Shalini Kapoor, EkStep Foundation", "Shankar Maruwada, EkStep Foundation"]}, {"title": "Trustworthy AI for All: Democratizing AI Resources Across the Stack", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 16", "building": "Bharat Mandapam", "track": "The Alan Turing Institute", "description": "Many countries are developing strategies for sovereign AI capabilities. Not all nations, especially LMICs, can have total control of the supply chain for their own AI stack. Such nations need the ability to have agency and control of their own AI. This panel will discuss the requirements for sovereign AI, the role private and public organisations play in delivering this, and the mechanisms that can be deployed to ensure a trustworthy and responsible AI stack.", "speakers": ["Carsten Maple, The Alan Turing Institute", "Dame Professor Wendy Hall, University of Southampton", "Dr Peter Mattson, ML Commons", "Dr Saurabh Garg, GoI", "Harish Iyer, Gates Foundation", "Natasha Crampton, Microsoft"]}, {"title": "Democratizing AI for Industry and Society", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 17", "building": "Bharat Mandapam", "track": "Ericsson", "description": "", "speakers": []}, {"title": "Building India's AI Stack: Systems, Capital, and Scale", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 17", "building": "Bharat Mandapam", "track": "Invest India", "description": "", "speakers": []}, {"title": "AI as Critical Infrastructure for Continuity in Public Services", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 17", "building": "Bharat Mandapam", "track": "Poland / Ministry of Digital Affairs", "description": "As Artificial Intelligence becomes embedded in public services and critical sectors, trust and resilience become matters of global governance. This high-level dialogue brings together public leadership, international organisations and industry to examine how Trusted AI can function as secure, accountable infrastructure. The discussion focuses on governance alignment, standards, security-by-design systems and responsible public–private cooperation that enables reliable cross-border digital ecosystems and strengthens global public trust in AI deployment", "speakers": ["Chengetai Masango, United Nations Secretariat of the Internet Governance Forum", "J.J. Singh, Indo-Polish Chamber of Commerce", "Edyta Gorzon, Billennium", "Rafał Rosiński, Ministry of Digital Affairs", "Sadhvi Saran"]}, {"title": "Unpacking Openness and Trust in AI: Global Perspectives", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 18", "building": "Bharat Mandapam", "track": "AI Now", "description": "This high-level panel explores a central tension in AI governance: openness can enable collaboration, innovation, and trust, yet may be constrained by commercial, state, and security considerations. The session examines how openness can function across the AI stack - compute, data, models, APIs, and applications and how to prevent misleading claims of openness. The panel also aims to highlight meaningful openness for emerging economies, balancing innovation, intellectual property, and national security.", "speakers": ["Alondra Nelson, Princeton University", "Amba Kak, AI Now", "Anne Bouvert, Government of France", "Astha Kapoor, Aapti Institute", "Karen Hao,", "Ravneet Kaur, Competition Commission of India"]}, {"title": "Scaling Trusted AI: How France and India Are Building Industrial & Innovation Bridges", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 18", "building": "Bharat Mandapam", "track": "Business France (French Trade & Investment Commission)", "description": "This flagship Indo-French session brings together government and industry leaders to advance trusted, responsible, and scalable AI. Featuring keynote visions from India and France, moderated dialogues, and a high-level panel, the event focuses on AI infrastructure, industrial deployment, deep tech, and sovereign data systems. It strengthens bilateral policy alignment, catalyses industry partnerships, and accelerates joint R&D, positioning the India AI Summit as a premier global platform for AI cooperation and innovation.", "speakers": ["Arthur Mensch, Mistral AI", "Arun Sadheesh, TNP Consultants", "Frederic Lelong, Atos Group", "Naila Giovanni, Technip Energies", "Sandeep Kumar Saxena, HCL Tech", "Valerian GIESZ, Quandela"]}, {"title": "Towards a Safer South: Launch of the Global South Network on AI Safety and Evaluation", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 18", "building": "Bharat Mandapam", "track": "Digital Futures Lab", "description": "The session will launch the Global South Network on AI Safety & Evaluation — a global alliance of research and civil society organisations working to advance context-aware AI safety research and practice rooted in realities of the Global South. It will explore how AI safety priorities differ across Global South contexts, where South-South collaboration is most needed, and how evidence from deployment contexts across the Global South can strengthen global AI safety efforts.", "speakers": ["Ambassador Philip Thigo, Government of Kenya", "Dr Amandeep Singh Gill, United Nations", "Dr Balaraman Ravindran, IIT Madras", "Dr Fabro Steibel, ITS Rio", "Dr Rachel Adams, Global Centre on AI Governance", "Dr Rachel Sibande, Gates Foundation", "Dr Urvashi Aneja, Digital Futures Lab", "Mr Abhishek Singh, Ministry of Electronics & IT, GoI", "Mr Amir Banafetmi, Cognizant", "Mr Vilas Dhar, Patrick McGovern Foundation", "Ms Chenai Chair, Masakhane African Languages Hub", "Ms Natasha Crampton, Microsoft"]}, {"title": "The Innovation Beneath AI: The US-India Partnership powering the AI Era", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 18", "building": "Bharat Mandapam", "track": "Quantum Alliance", "description": "AI is reshaping how infrastructure is being developed across areas such as energy, critical minerals, compute, and data centres. This session will examine emerging approaches to building the infrastructure required to support AI growth, including supply chain considerations, investment trends, and policy frameworks. The discussion will also explore how public and private sector actors can contribute to scalable and sustainable infrastructure development.", "speakers": ["Jeff Binder, TokenForm", "Prince Dhawan, REC Limited", "Tobias Helbig, NXP Semiconductors", "Tuan Ho, Xfund", "Ujjwal Kumar, Quantum Alliance", "Vrushali Gaud, Google"]}, {"title": "AI and the New Frontier for Economic Progress: Linking Innovation to Inclusive Growth", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 18", "building": "Bharat Mandapam", "track": "The World Bank", "description": "This panel discussion will highlight the potential of AI-led economic transformation to enable sustained growth, particularly in the Global South.  Panelists will also highlight risks of economic divides, labor displacement and other adverse social impact. The session will help identify the roles of governments, private enterprises and development institutions working together to align technological innovation with inclusive economic transformation.", "speakers": ["Anu Bradford, Columbia Law School", "Iqbal Singh Dhaliwal, Massachusetts Institute of Technology", "Jeanette Rodrigues, Bloomberg LP", "Johannes Zutt, The World Bank", "Michael Kremer, University of Chicago", "Ufuq Akcigit, University of Chicago"]}, {"title": "Humanity in the Loop- Balancing Innovation and Ethics in the Age of AI", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 18", "building": "Bharat Mandapam", "track": "UNESCO", "description": "\"Humanity in the Loop\" will explore how human rights, transparency, and ethics can drive responsible AI innovation. Bringing together leaders from governments, industry, academia, civil society, and multilateral bodies, the session will showcase practical approaches to embedding values-based governance in AI ecosystems. Discussions will center on trust-building, inclusion, and leadership in ethical innovation to ensure that AI advances serve humanity equitably and sustainably.", "speakers": ["Debjani Ghosh, NITI Aayog, GoI", "Dr Mariagrazia Squicciarini, UNESCO", "Dr. Tawfik Jelassi, UNESCO", "Justice Gilmar Mendes, Brazil's Supreme Federal Court", "Mr Brando Benifei, European  Parliament", "Mr. Jitin Prasada, GoI", "Paula Goldman, Salesforce", "Professor Virginia Dignum, Umea University"]}, {"title": "AI for Impact: Skilling, Inspiring, and Empowering the Next Gen", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "Meta", "description": "This session brings together policymakers, academia, and industry leaders to discuss how AI skilling can prepare the workforce for the future AI-led economy. It will explore India's approaches to developing AI talent, strategies for scaling and replicating successful skilling programs across the Global South, and ways to inspire the next generation to create impactful AI solutions for society. This session will aid in gaining insights into building inclusive, scalable AI skilling initiatives that drive innovation and social progress.", "speakers": ["Mr.  Pankaj Kumar Pandey, Principal Secretary to Government, Department of Personnel & Administrative Reforms (e-Governance) and Director, Sakala Mission, Karnataka Government Secretariat", "Mr. Aman Jain, Meta", "Mr. Buddha Chandrasekhar, Anuvadini AI ; CCO, AICTE", "Mr. Darrin Farrant, United Nations Information Centre, India & Bhutan", "Mr. Deepak Bagla, Atal Innovation Mission, NITI Aayog", "Mr. Manav Subodh, 1M1B", "Mr. Rishikesh Patankar, NSDC", "Shri Jayant Chaudhary, Minister of Skill Development & Entrepreneurship and MOS,Education"]}, {"title": "Leveraging AI4All: Pathways to Inclusion", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "Meta", "description": "This session brings together leaders from government, industry, the judiciary, and international institutions to showcase how India is deploying AI for population-scale, citizen-centric impact. The session examines real-world inclusion successes across accessibility, language, and service delivery, and explores how India's experience can inform global collaboration, capacity building, and inclusive AI adoption across the world.", "speakers": ["Agustya Mehta, Meta", "Archana Joshi, Xoriant", "Arghya Bhattacharya, Adalat AI", "Hoda Baraka, The Egyptian Minister of ICT for Technology Talents Development, Egypt", "Rutuja Pol, Ikigai Law"]}, {"title": "Connectivity and Inclusive AI for Global Growth", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "Qualcomm", "description": "This session explores inclusive, edge-driven AI and next-generation connectivity, highlighting how on-device, hybrid, and agentic AI can enable global growth, human-centric experiences, and a scalable AI ecosystem.", "speakers": ["Durga Malladi, EVP, GM, Technology Planning, Edge Solutions and Data Center"]}, {"title": "Building Public Interest AI: Catalytic Funding for Equitable Access to Compute Resources", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "The Rockefeller Foundation", "description": "This event will mark the launch of the working report on \"Opening Up Computational Resources for New AI Futures\" by Secretary, MOSPI in the presence of Additional Secretary, MeitY. The event includes a keynote and a panel discussion that brings together senior govt officials and global AI experts to discuss pathways for democratising AI. How will catalytic funding for public interest and South–South partnerships democratise access and affordability of compute in the Global South?", "speakers": ["Abhishek Singh, Ministry of Electronics & IT, GoI", "Andrew Sweet, The Rockefeller Foundation", "Deepali Khanna, The Rockefeller Foundation", "Dr. Saurabh Garg, Ministry of Statistics and Programme Implementation, GoI", "Martin Tisné, Government of France", "Shaun Seow, Philanthropy Asia Alliance", "Shikoh Gitau, Qhala", "Sushant Kumar, Kalpa Impact", "Vilas Dhar, Patrick J. McGovern Foundation"]}, {"title": "Democratizing AI Compute and Digital Data Infrastructures", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "The World Bank", "description": "This panel will examine how governments and partners can expand equitable access to the core enablers of AI ecosystems, particularly compute and digital data infrastructure to support inclusive, sustainable innovation. It will discuss practical models such as shared compute, regional infrastructure, and public–private partnerships, alongside investments in skills, data readiness, and governance. The panel will also explore cost-efficient AI approaches and strategies to reduce AI's environmental footprint through energy- and water-efficient infrastructure.", "speakers": ["Chenai Chair, Masakhane African Languages Hub", "Faith Waithaka, Africa Data Centres Association", "Ronnie Chatterji, OpenAI", "Sangbu Kim, World Bank", "Sanjay Jain, Gates Foundation", "Saurabh Garg, MoSPI, GoI", "Yann LeCun, AMILabs"]}, {"title": "AI and Children's Safety and Wellbeing", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "United Nations Office for Digital and Emerging Technologies", "description": "Children are becoming among the earliest and most intensive users of AI, often before safeguards and regulations are fully in place. This session asks a direct question: how can AI be shaped to strengthen children's safety and wellbeing rather than undermine them? Drawing on technology leaders, child-rights experts, and a young AI innovator, the discussion examines advancing innovation, where risks demand firm limits, and how trust in AI can be built for the next generation.", "speakers": ["Amandeep Singh Gill, UN ODET", "Chris Lehane, OpenAI", "Joanna Shields, RAIIF", "Maria Bielikova, Kempelen Institute for Intelligent Technologies", "Megan Garcia", "Nikita Lakkaraju, Digital Empowerment Foundation", "Raul John Aju, (AIRealm Technologies Pvt Ltd) AI Kid of INDIA", "Thomas Davin, UNICEF", "Tom Hall, International LEGO Education", "Urvashi Aneja, Digital Futures Lab"]}, {"title": "Safe and Trusted AI High-Level Event: Responsible Practices and Industry Standards", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 19", "building": "Bharat Mandapam", "track": "United Nations OHCHR B-Tech", "description": "This session convenes diverse stakeholders to exchange perspectives on building trustworthy and socially beneficial AI. It focuses on practical safeguards, shared accountability, capacity building, and alignment around good practices that support innovation while protecting people and communities, encouraging cooperation and actionable pathways for responsible AI adoption.", "speakers": ["Alexandria Walden, Google", "Ankit Bose, Nasscom Responsible AI Office", "Hector De Rivoire, Microsoft", "Namit Agarwal, World Benchmarking Alliance", "Paridhi Adani, Cyril Amarchand Mangaldas", "Paula Goldman, Salesforce", "Peggy Hicks, OHCHR Thematic Engagement and Special Procedures", "Youchul Kim, LG AI Research"]}, {"title": "International AI Safety Coordination: What Policymakers Need to Know", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "AI Safety Connect (AISC)", "description": "The race to AGI/ASI is getting more geopolitical and difficult to control and govern with profound consequences for our societies and civilisations. This session will aim to delineate an actionable governance agenda to address that situation, exploring advanced AI technical and governance needs .", "speakers": ["Dr. Eileen Donahoe, Sympatico Ventures", "H. E. Govind Singh Deo, Government of Malaysia", "H.E. Josephine Teo, Singapore Government", "H.E. Mathias Cormann, OECD", "Mr. Cyrus Hodes, AI Safety Connect", "Mr. Jann Tallinn, Future of Life Institute", "Mr. Nicolas Miailhe, AI Safety Connect", "Mr. Osama Manzar, Digital Empowerment Foundation", "Mr. Sangbu Kim, The World Bank Group", "Prof. Stuart Russell, The International Association for Safe and Ethical AI (IASEAI)", "Shri Jitin Prasada, Ministry of Commerce and Industry (MoCI) and Ministry of Electronics and Information Technology (MeitY), GoI"]}, {"title": "Democratizing AI Requires a Free and Open Internet", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "Cloudflare, Inc.", "description": "As AI becomes deeply embedded in economies and societies, the key question is who has access and who benefits. This session brings thought leaders to discuss how true AI democratization depends on preserving the Internet as a global platform rather than fragmented walled gardens. It will explore how open-source ecosystems, data commons, and distributed compute powered by an open Internet can enable startups and developing nations, especially India, to realize inclusive \"AI for All\" ambitions.", "speakers": ["Matthew Prince, Cloudflare", "Rahul Matthan, Trilegal", "Rajan Anandan, PeakXV Partners and Surge"]}, {"title": "Accelerating India's AI Growth – A Blueprint for India's AI Success", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "Dell Technologies", "description": "This session will present a blueprint outlining priorities to support AI growth, including scaling infrastructure, building skills, enabling innovation, and strengthening governance frameworks. The discussion will bring together stakeholders to examine how such priorities can support AI readiness, economic development, and broader societal outcomes, with a focus on inclusive and sustainable adoption.", "speakers": ["Hon'ble Shri Jayant Chaudhary Ji, GoI", "Manish Gupta, Dell Technologies India", "Mridu Bhandari, Network18", "Rajgopal A S, NxtGen Cloud Technologies", "Rajiv Memani, EY", "Rishi Bal, BharatGen", "Vivek Mohindra, Dell Technologies Global"]}, {"title": "AI governance in the Age of Powerful AI - IInternational Perspectives and the Code of Practice", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "European Commission", "description": "Bringing perspectives from government, academia, industry, and civil society across regions, the session will explore how AI governance frameworks can support responsible innovation, and build shared trust in widely deployed AI systems. This panel will also introduce the Code of Practice for general-purpose AI models and examine its implications globally. The discussion will unpack requirements on transparency, copyright, and lifecycle risk management, including safeguards for advanced models with systemic impact.", "speakers": ["Henna Virkkunen, European Commission", "Lucilla Sioli, European Commission", "Sean Ó hÉigeartaigh, University of Cambridge", "Yoshua Bengio, Mila Institute"]}, {"title": "Realizing the Health Value of AI - Safely", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "Gates Foundation", "description": "AI is transforming health in unprecedented ways, but progress only matters when it is safe, trusted, and built for people. At the India AI Impact Summit 2026, we are convening a focused conversation on how AI can responsibly deliver real health value. From global health systems to frontline impact, this session brings together leaders at the intersection of science, data, and care to turn AI's promise into measurable health outcomes.", "speakers": ["Dr. Monika Sharma, Novo Nordisk Foundation", "Dr. Richard Rukwata, Medicines Control Authority of Zimbabwe", "Dr. Trevor Mundel, Gates Foundation", "Minister Paula Ingabire, Government of Rwanda", "Professor Charlotte Watts, Wellcome", "Vikalp Sahni, Eka.Care", "Dr. Sindura Ganapathi, Center for Brain Research in Bangalore & Office of the Principal Scientific Advisor (GoI)"]}, {"title": "Scaling AI Solutions Through South–South Collaboration", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "Gates Foundation", "description": "Big challenges. Shared realities. Stronger solutions. Across health, agriculture, and education, the Global South is already building AI that works in real conditions and at real scale. This fireside conversation examines what happens when Global South leaders collaborate, and how partnerships can turn AI potential into tangible development outcomes. Join the conversation on building AI solutions together at the India AI Impact Summit 2026.", "speakers": ["Mr. Ankur Vora, Gates Foundation", "Mr. Lacina Koné, Smart Africa", "Mr. Sunil Wadhwani, Wadhwani AI", "Ms. Shikoh Gitau, Qhala", "S. Krishnan, MeitY, Govt. Of India", "Shalini Kapoor, EkStep Foundation"]}, {"title": "Empowering People in the Age of AI: German–Asian Partnerships for Talent, Innovation, and the Future of Work", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "German Federal Ministry for Economic Cooperation and Development (BMZ)", "description": "This panel explores how German–Asian cooperation bridges AI skill gaps to drive SME productivity and innovation. Experts will discuss strategic partnerships between government, industry, and academia to integrate vocational training with AI-led ecosystems. By showcasing collaboration models like the AI Academia Innovation Partnership, the session offers actionable pathways for preparing a future-ready workforce and securing long-term competitiveness in an AI-driven global economy.", "speakers": ["Arthur Rapp, German Centre for Research and Innovation", "Dr Kusumita Arora, Indo-German Science & Technology Centre (IGSTC)", "Dr. Baerbel Kofler, Federal Ministry for Economic Cooperation and Development (BMZ)", "Mr. Augustus Azariah, Associated Chamber of Commerce (ASSOCHAM)", "Mr. Jan Noether, Indo German Chamber of Commerce", "Prof. Dr. Clas Neumann, Head of Global SAP Labs Network"]}, {"title": "Responsible AI in Action: How Global Enterprises Are Building Trust at Scale", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "Infosys Limited", "description": "AI is reshaping industries worldwide, and trust plays an important role in enabling sustainable innovation. This session will bring together AI leaders and decision-makers to discuss approaches to responsible AI deployment at scale. The discussion will examine how enterprises are embedding ethics, transparency, and accountability into mission-critical AI systems while balancing speed, compliance, and innovation. Participants will gain insights, strategies, and real-world examples related to building safe and trusted AI systems.", "speakers": ["Mr. Manish Gupta, Google DeepMind", "Mr. Sundar R Nagalingam, NVIDIA", "Mr. Sunil Abraham, Meta", "Mr. Syed Ahmed, Infosys", "Ms.  Geeta Gurnani, IBM"]}, {"title": "Preparing to Monitor the Impacts of Agents: Closing the Global Assurance Divide for Safe and Trusted AI", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 6", "building": "Bharat Mandapam", "track": "Partnership on AI (PAI)", "description": "This 60-minute panel session examines how real-time monitoring and threshold-based safety frameworks can be applied to govern AI agents at scale. It explores inclusive AI assurance approaches that support safe, trusted, and interoperable deployment across diverse global contexts.", "speakers": ["Chris Meserole, Frontier Model Forum", "Doreen Bogdan-Martin, International Telecommuni cation Union (ITU)", "Madhu Srikumar, Partnership on AI", "Minister Josephine Teo, Singapore Government", "Natasha Crampton, Microsoft", "Owen Larter, Microsoft", "Rebecca Finlay, Partnership on AI", "Rumman Chowdhury, Humane Intelligence", "Stephanie Ifayemi, Partnership on AI", "Vukosi Marivate (confirmed), University of Pretoria"]}, {"title": "Making AI for everyone: The case for personal, local, multilingual AI", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 7", "building": "Bharat Mandapam", "track": "Current AI", "description": "This session will look at a collaborative build, i.e. a local AI device platform that empowers communities to create their own AI tools, in their own language, for their own needs, with complete privacy and control; and a video projection of the build in use. It will also include a fireside chat between AI leaders, and a high-level dialogue between senior delegation of French and Indian officials. Jointly these interventions will explore a multilingual, public-interest AI ecosystem.", "speakers": ["Andrew Tergis, Current AI", "Anne Bouverot, Government of France", "Ayah Bdeir, Current AI", "Martin Tisné, Current AI", "Shailendra Pal Singh, Bhashini", "Shri. Abhishek Singh, Meity, GoI", "Shri. Amitabh Nag, Bhashini", "Sushant Kumar, Kalpa Impact"]}, {"title": "AI for Economic Development and Social Good", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 7", "building": "Bharat Mandapam", "track": "Fraunhofer Gesellschaft (India Office)", "description": "This session will advance dialogue and collaboration among government, industry and the research community. It will explore AI's role in inclusive growth and sustainable innovation across manufacturing, agriculture, healthcare, and trustworthy AI. Featuring leadership talks, the session will convene leaders, policymakers, technologists and entrepreneurs to strengthen partnerships, promote R&D and accelerate responsible AI adoption.", "speakers": ["Ashwini Vaishnaw, GoI", "Dr. Anshuman Awasthi, Mercedes-Benz Research & Development India Pvt. Ltd.", "Dr. Thomas Kuhn, Fraunhofer Institute for Experimental Software Engineering (IESE)", "H.E. Dr. Karsten Wildberger, Federal Ministry for Digital Transformation and Government Modernisation (BMDS)", "H.E. Dr. Philipp Wildberger, Embassy of the Federal Republic of Germany, New Delhi", "Mr. Dattatri Salagame, Bosch Global Software Technologies", "Mr. Murali Nair, Bertelsmann Stiftung", "Mr. Prashanth Doreswamy, Aumovio India", "Ms. Anandi Iyer, Fraunhofer Office India", "Ms. Sindhu Gangadharan, SAP Labs India; NASSCOM; Indo-German Chamber of Commerce"]}, {"title": "Trust and Safety as Engines for Growth and Innovation", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 7", "building": "Bharat Mandapam", "track": "International Association of Privacy Professionals", "description": "Around the world governments and businesses agree: trust is the key for accelerating AI adoption. While research has extensively mapped why trust in AI matters, far less attention has been given to how trust will be implemented, including issues around the people, skills and systems required to operationalize trust and safety at scale.", "speakers": ["Alexandra Reeve Givens, IAPP", "Commissioner John Edwards, United Kingdom Government", "Josephine Teo, Government of Singapore", "Trevor Hughes, IAPP"]}, {"title": "Building Blocks for National AI Strategy and Implementation", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 7", "building": "Bharat Mandapam", "track": "Japan International Cooperation Agency", "description": "This high-impact conference unites global AI leaders—disruptors, VCs, practitioners, and national decision-makers—to exchange real-world strategies for scaling AI responsibly. Sessions feature report launches like \"Great Powers in the Age of AI,\" tackling geopolitical roles, enterprise transformations, and national ecosystem challenges (data/compute/talent gaps). Moderated panels explore governance transitions, India's leadership potential, and pathways for secure, equitable innovation across Industrial-to-Information Age dynamics.", "speakers": ["Atsushi Yamanka, JICA", "Dr. Hoda Baraka, Govt. of Egypt and Cairo University", "Kavita Bhatia, IndiaAI", "Laura Gilbert, Tony Blair Institute for Global Change", "Phani Nagarjuna, Telangana AI Innovation Hub", "Saibal Chakraborty, BCG", "Suha Kayum, PIF, Saudi Arabia"]}, {"title": "Shaping the AI Narrative: Trust, Outcomes and Responsibility", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 7", "building": "Bharat Mandapam", "track": "Wipro Limited", "description": "As AI adoption accelerates, enterprises are assessing how the next wave of transformation differs from earlier expectations. This session brings together investors, founders, and transformation leaders to examine where enterprise AI can create value, where limitations remain, and how organisations can move from pilot initiatives to scaled deployment. The discussion will also consider how operating models may evolve in response to emerging AI-enabled workflows.", "speakers": ["Divyesh Vithlani, First Abu Dhabi Bank (FAB)", "Erik Ekudden, Ericsson", "Hari Shetty, Wipro", "Hon. Dr. Andrew Charlton MP, Science, Technology and the Digital Economy Government of Australia", "Jay Chaudhry, Zscaler", "Mridu Bhandari, CNBC-TV18", "Tanuj Kapilashrami, Standard Chartered"]}, {"title": "Catalyzing Global Investment for Equitable and Responsible AI in Health", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 7", "building": "Bharat Mandapam", "track": "World Health Organization", "description": "This strategic roundtable will convene senior policymakers, development partners, and financing institutions to discuss approaches for strengthening and aligning investment in artificial intelligence for health. The session will examine current financing gaps, opportunities for coordinated and sustainable investment, and governance considerations to support responsible, equity-oriented AI adoption. Discussions will focus on enabling country-led priorities, strengthening health system foundations, and ensuring that AI contributes to safe, inclusive, and sustainable public health outcomes.", "speakers": ["Alain Labrique, WHO Headquarters, Geneva", "Catharina Boehma, WHO South-East Asia Region-Opening", "Haitham Ali Ahmed El‑Noush, NORAD", "Justice Prathiba M. Singh, Delhi High Court", "Ken-Ichiro Natsume, World Intellectual Property Organization – WIPO", "Payden P., WHO", "Prokar Dasgupta, King's College London", "Zameer Brey, Gates Foundation"]}, {"title": "Scaling Human Potential in the Age of AI", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 8", "building": "Bharat Mandapam", "track": "AI Kiran", "description": "AI is rapidly becoming a foundational layer across education, creativity, and enterprise. This session examines how human potential is shaped, scaled, or constrained by AI systems and what it takes to ensure these technologies expand capability rather than concentrate advantage. Leaders from automation, AI-driven enterprise, data ecosystems, global business, philanthropy, and the creative arts discuss where AI meaningfully augments human skill, and where intentional design is required to prevent new forms of exclusion.", "speakers": ["Anurag Hoon, Manzil Mystics", "Archana Vemulapalli, Global Commercial Sales, AMD", "Kirthiga Reddy, OptimizeGeo and Founder, AI Kiran", "Lakshmi Pratury, INK Global Foundation", "Mihir Shukla, Automation Anywhere", "Radha Ramaswami Basu, iMerit"]}, {"title": "Enabling Global Enterprise AI Adoption for Impact", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 8", "building": "Bharat Mandapam", "track": "Business Software Alliance", "description": "A practical, impact-focused discussion on how enterprise AI can deliver measurable gains in productivity, service quality, and inclusive growth. Through real-world global use cases, participants will gain insights into scaling AI adoption across diverse markets, with a focus on workforce skilling, infrastructure, and data readiness. The session will surface actionable lessons, partnership models, and implementation requirements to move from pilot projects to sustainable, replicable AI solutions, particularly in emerging market contexts.", "speakers": ["Danielle Johnson-Kutch, Docusign", "Dr. Clas Neumann, SAP", "Mr. Chandler Morse, Workday", "Mr. Combiz Richard Abdolrahimi, ServiceNow", "Mr. David Masters, Atlassian", "Mr. Jace Johnson, Adobe", "Mr. Josh Kallmer, Zoom", "Mr. Mike Haley, Autodesk", "Mr. Sam Kaplan, Palo Alto Networks", "Mr. Srinivas Tallapragada, Salesforce", "Ms. Anne Robinson, IBM", "Ms. Victoria Espinel, Business Software Alliance", "William Kimmitt, US Government"]}, {"title": "Applying AI: How AI Innovators and Governments Reshape the Public Sector", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 8", "building": "Bharat Mandapam", "track": "European Commission", "description": "This panel brings together global leaders and innovators to examine the transformative potential of AI within the public sector. The discussion will delve into the roles of AI developers and governmental bodies, focusing on how their collaboration can translate trustworthy AI principles into tangible public services and policy-making results. The event will spotlight actionable strategies, visionary ideas and ways to deploy AI systems that can deliver social and economic value.", "speakers": ["Arthur Mensch, Mistral", "Henna Virkkunen, European Commission", "Jarek Kutylowski, DeepL", "Lucilla Sioli, European Commission", "Mateo Valero, BSC AI Factory", "Roberto Viola, European Commission"]}, {"title": "Intelligent Telecom Networks in the age of AI and Data Sovereignty", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 8", "building": "Bharat Mandapam", "track": "GSMA Services India Private Limited", "description": "As India enters its next phase of AI-driven digital growth, telecom networks are becoming the intelligent backbone of Digital Public Infrastructure (DPI). This session explores how AI-native networks, edge computing, and interoperable standards can strengthen trust, resilience, and digital sovereignty. The discussion will examine the convergence of telecom, AI, and DPI, and how India can play a leadership role in shaping globally compatible architectures in driving consensus across the mobile ecosystem.", "speakers": ["Ambika Khurana, Vodafone Idea Limited", "Debashish Chakraborty, GSMA Services India Private Limited", "Deepak Maheshwari, Centre for Social and Economic Progress (CSEP)", "Mansi Kedia, World Bank", "Rahul Vatts, Bharti Airtel"]}, {"title": "Aligning AI Governance Across the Technology Stack", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 8", "building": "Bharat Mandapam", "track": "Information Technology Industry Council", "description": "This high-level CXO panel will explore how AI governance frameworks can be aligned across the entire technology stack—from semiconductors and compute infrastructure to AI models, applications, and deployment. Panelists will discuss risk-based, interoperable approaches that support innovation while clearly defining roles across the AI value chain. The session will highlight practical governance challenges and opportunities for global coordination, with a focus on collaboration between like-minded partners.", "speakers": ["Aparna Bawa, Zoom Communications", "David Zapolsky, Amazon", "Jason Oxman, Information Technology Industry Council", "Jay Chaudhry, Zscaler"]}, {"title": "AI Agents for a Better Tomorrow: Government Services, Climate Action, and Resilient Infrastructure", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 8", "building": "Bharat Mandapam", "track": "Salesforce", "description": "This panel will bring together industry and government stakeholders to explore the shift towards autonomous AI agents. The discussion will focus on the engineering architectures required to scale these systems for climate resilience and public services, alongside governance frameworks that support trust and accountability. Moving from theory to practice, the session will examine pathways for public–private collaboration to support secure and responsible AI deployment with tangible outcomes.", "speakers": ["Lee Tiedrich, Pratt School of Engineering, Duke University", "Mike Haley, Autodesk", "Sridhar Babu, Information Technology, Electronics & Communications, Industries & Commerce and Legislative Affairs, Telangana", "Srinivas Tallapragada, Salesforce", "Victoria Espinel, Business Software Alliance"]}, {"title": "Welfare for All: Ensuring Equitable AI Growth Across the World's Largest and Oldest Democracies", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "APCO", "description": "This high-level panel will convene World's largest AI practitioners from Google, Apple, Microsoft, Dell, and others will explore how the world's biggest tech companies can work with governments to achieve democratic access to AI on a global scale. With India and the U.S. as democratic anchors, the session will highlight practical pathways to ensure AI-driven growth delivers broad-based welfare and equal opportunity for all.", "speakers": ["Mr. Amit Chadha, LTTS", "Mr. Brad Staples, APCO Worldwide", "Mr. Julian Waits, Rapid7", "Mr. Michael Sellitto, Anthropic", "Mr. Sachin Kakkar, Google", "Mr. Saurabh Kumar Sahu, Accenture in India", "Ms. Amanda Craig Deckard, Microsoft", "Ms. Lee Tiedrich, University of Maryland"]}, {"title": "Beyond Technicality: Multidisciplinary AI Governance for Real-World Impact", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "Association for Computing Machinery", "description": "This interactive roundtable broadens the AI safety conversation by foregrounding societal, institutional, and ethical dimensions beyond purely technical approaches. It treats AI governance as a multidisciplinary, context-aware challenge rooted in real deployment settings and community experience. Through brief interventions and guided discussion, participants will identify shared priorities and co-develop principles and collaboration areas to embed interdisciplinary expertise, civil society voices, and context-sensitive evaluation into national and global AI policy frameworks.", "speakers": ["Dame Wendy Hall, Web Science Institute at the University of Southampton", "James (Kayliang) Ong, Artificial Intelligence International Institute (AIII)", "Jeanna Matthews, Association of Computing Machinery", "Jibu Elias, Independent", "John Harvard, Tony Blair Institute for Global Change", "Merve Hickok, Center for AI & Digital Policy, AIethicist.org", "Neha Kumar, School of Interactive Computing at Georgia Tech", "Quentin Lambert, UN ODET", "Sara Hooker, Adaption Labs", "Virginia Dignum, Association of Computing Machinery", "Yannis Ioannidis, Association of Computing Machinery"]}, {"title": "Building Inclusive Futures through AI Literacy for India and the Global South", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "Central Square Foundation (CSF)", "description": "This session will examine how AI can be integrated into education in India and the Global South in a responsible, inclusive, and scalable way. It will address the need for foundational AI literacy, clarify what AI literacy means for students, teachers, and parents, and explore practical pathways from curriculum design to classroom implementation. The discussion will also focus on governance, ethics, data privacy, and system-level conditions for safe, large-scale innovation in schools.", "speakers": ["Bhanu Potta, Central Square Foundation", "Chitra Ravi, Chrysalis", "Dr. Shabana KM, Wadhwani School of Data Science and AI, IIT Madras", "Gouri Gupta, Central Square Foundation", "Ramya Venkataraman, CENTA", "Tanushree Narain Sharma, Transform Schools"]}, {"title": "Panel Discussion on Reimagining Responsible AI: Frameworks, Safeguards, and Standards for the Next Wave of AI Innovation", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "Coalition for Responsible Evolution of AI (CoRE-AI)", "description": "This panel will examine the next phase of Responsible AI frameworks, safeguards, and standards in the context of evolving AI technologies. It will feature a focused discussion to gather practical inputs on strengthening governance mechanisms, lifecycle oversight, risk assessment tools, and global standard setting, with emphasis on responsible innovation in emerging systems such as agentic AI.", "speakers": ["Mr. Ashish Tewari, Infosys", "Mr. Kamesh Shekar, The Dialogue", "Mr. Syed Quiser Ahmed, Infosys", "Ms. Arundhati Bhattacharya, Salesforce"]}, {"title": "Supercharging AI Adoption in the Global South: Opportunities and Lessons from the Financial Sector", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "JPMorganChase", "description": "As one of the most regulated sectors, financial services has emerged as a leader in responsible AI governance, prioritizing aspects such as security and data privacy for trusted deployment. This panel will highlight learnings from the sector's AI journey that can accelerate AI adoption in the Global South. It will distill key lessons from AI governance in finance to drive grassroots AI adoption among small business owners, farmers, public school educators, & local government officials.", "speakers": ["Ashutosh Sharma, Prosus Ventures", "Harshil Mathur, Razorpay", "Terah Lyons, JPMorganChase"]}, {"title": "The Agent Universe: From Automation to Autonomy", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "Paytm (One97 Communications Ltd.)", "description": "This session explores software's shift from passive tools to autonomous, goal-driven agents—where agency replaces interfaces. Key signals include machine-first platforms, \"login as agent\" paradigms, and intent-driven workflows transforming commerce, governance, and productivity. The session spotlights India's leadership through scale, digital infrastructure, and talent; and encourages audiences to rethink who—or what—powers the future of computing.", "speakers": ["Harinder Takhar, Paytm Labs", "Vijay Shekhar Sharma, Paytm"]}, {"title": "American AI Exports: Adoption & Financing", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L1 Meeting Room No. 9", "building": "Bharat Mandapam", "track": "U.S. Embassy New Delhi", "description": "", "speakers": []}, {"title": "MahaAI: Building Safe, Secure and Smart Governance", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "DIT, Government of Maharashtra", "description": "This session will showcase Maharashtra's approach to building safe, secure and citizen-centric AI governance. It will examine how the State is embedding ethics, data protection, security and AI system for public services, safety and administration. The discussion will outline Maharashtra's policy roadmap for responsible AI adoption and highlight how AI can drive economic growth and social good while remaining transparent, accountable and trusted.", "speakers": ["Davinder Sandhu, Primus Partners", "Dr. Amit Kapoor, Institute for Competitiveness", "Dr. Anupam Chattopadhyay, Nanyang Technological University", "Dr. Ganesh Ramakrishnan, IIT Bombay", "Mr. Ashish Tewari, Infosys Responsible AI Office (India)", "Mr. Bhuvnesh Kumar, UIDAI", "Mr. Devroop Dhar, Primus Partners", "Mr. Ranjeet Goswami, Tata Consultancy Services", "Mr. Suresh Sethi, Protean eGov Technologies", "Mr. Vikas Rastogi, Department of Agriculture", "Mr. Virendra Singh, Government of Maharashtra", "Ms. Beena Sarkar, ServiceNow"]}, {"title": "Building Population-Scale Digital Public Infrastructure for AI", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "EkStep Foundation", "description": "This session brings together examples of AI solutions that have scaled from pilots to population-level systems, yielding measurable gains in service delivery, productivity, and inclusion. It will surface the governance, infrastructure, and partnership models that enable sustainable scale.", "speakers": ["Dario Amodei, Anthropic", "Doreen Bogdan-Martin, ITU", "Esther Dweck, Brazil", "Esther Dweck, Brazil", "Nandan Nilekani, Infosys", "Shankar Maruwada, EkStep Foundation", "Trevor Mundel, Gates Foundation"]}, {"title": "AI and Open Networks: Creating Impact at Scale", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "Google LLC", "description": "AI can deliver population-scale impact across healthcare, education, agriculture, and energy only when coordination is built into the system through Open Networks and Digital Public Infrastructure. In India, AI agents leveraging open networks already help citizens access vital services via simple mobile interfaces—demonstrating how this model bridges structural gaps in service delivery. This session examines how this interoperable infrastructure translates AI intent into action, enabling safe, privacy-preserving impact that can scale across borders.", "speakers": ["Kiran Mazumdar-Shaw, Biocon Group", "Mr. James Manyika, Google - Research, Labs, Technology & Society and  UN Advisory Body on AI", "Nandan Nilekani, Networks for Humanity (NFH)", "Sangbu Kim, The World Bank Group", "Sunil Wadhwani, Wadhwani AI"]}, {"title": "AI for Agriculture: Scaling Intelligence for Food and Climate Resilience", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "Government of Maharashtra", "description": "This session positions agriculture as a strategic application domain for Artificial Intelligence, aligned with India's national AI vision. Anchored by the Government of Maharashtra, it presents policy‑led, implementation‑ready AI models to strengthen food systems and climate resilience. The programme will feature a keynote address by the Hon'ble Chief Minister of Maharashtra, followed by a curated high‑level panel discussion and interactive Q&A, with participation from senior Government of India officials, global experts, and leading technology policymakers.", "speakers": ["Abhishek Singh, MEITY and India AI Mission", "Devendra Fadnavis, Maharashtra", "Devesh Chaturvedi, Ministry of Agriculture and Farmers Welfare, Government of India", "Johannes Zutt, SARVP, World Bank Group", "Shankar Maruwada, Ek Step Foundation", "Shri. Vikas Chandra Rastogi, Government of Maharashtra", "Soumya Swaminathan, M S Swaminathan Research Foundation"]}, {"title": "Thriving with AI: Human Potential, Skills, and Opportunity", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "OpenAI", "description": "AI is rapidly reshaping economies and societies. This panel will examine AI's socio-economic impact on productivity, growth, and with a particular focus on economic opportunity and the evolving role of education and skills. By engaging candidly with both risks and opportunities, the discussion will consider how aligning technology, education, and policy can help shape an AI-driven economy that delivers resilient and sustainable solutions.", "speakers": ["Chris Lehane, OpenAI", "Iqbal Dhaliwal, J-PAL", "Pragya Misra, OpenAI India", "Ronnie Chatterji, OpenAI", "Roopa Purushothaman, Tata Sons", "Sanjiv Bikhchandani, Info Edge"]}, {"title": "Global AI Capacity Development Network", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "United Nations Office for Digital and Emerging Technologies", "description": "", "speakers": []}, {"title": "Keynote", "startTime": "5:30 PM", "endTime": "5:40 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Sara Hooker, Co-founder, Adaption Labs"]}, {"title": "Panel: AI & Cybersecurity", "startTime": "1:30 PM", "endTime": "2:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Ms. Daisy Chittilapilly, President Cisco India & South Asia", "Dharshan Shanthamurthy, Chief Executive Officer, SISA", "Pradeep Sekar, Managing Director, Optiv Security Inc.", "Richard Marko, Chief Executive Officer, ESET", "A. S. Lakshminarayanan (Lakshmi), Managing Director & Chief Executive Officer, Tata Communications", "G Narendra JS-NSCS", "Moderator: Samrat Kishor, India AI Mission"]}, {"title": "Panel: Powering AI", "startTime": "5:42 PM", "endTime": "6:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 1", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Deepak Garg, Engineer, Founder, Chairman, Co-CEO, Smart Energy Water", "Vineet Mittal, Chairman, Avaada Group", "Natham Blom, Vice President, Cooling, Chemours", "Raghav Chandra, Professor IIM Calcutta, Founder CEO of CUNSULT, ex-Chairman NHAI and Secretary GoI"]}, {"title": "AI for the Good of All - Brazilian Perspectives on the Future of AI", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "Brazil's Ministry of Foreign Affairs (MRE), Embassy of Brazil in New Delhi", "description": "The President of Brazil, Luiz Inácio Lula da Silva, as well as Brazilian Ministers will share national practices on public policy and digital governance to advance responsible AI with social impact.", "speakers": ["Luiz Inácio Lula da Silva, President of Brazil", "Mauro Vieira, Minister of Foreign Affairs, Brazil", "Alexandre Padilha, Minister of Health, Brazil", "Frederico de Siqueira Filho, Minister of Communications, Brazil", "Esther Dweck, Minister of Management & Innovation in Public Services, Brazil", "Camilo Santana, Minister of Education, Brazil", "Luciana Santos, Minister of Science, Technology & Innovation, Brazil"]}, {"title": "The Role of Science in International AI Governance", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "United Nations Office for Digital and Emerging Technologies", "description": "Scientific knowledge is an essential foundation for effective governance of Artificial Intelligence. As AI systems evolve, there is a growing need for transparent and evidence- based assessments to guide international standards and ensure inclusive innovation. This session will explore how the science-policy interface can inform international AI governance and strengthen cooperation between stakeholders.", "speakers": ["Ajay Kumar Sood, GoI", "Amandeep Gill, UN ODET", "Anil Ananthaswamy, Science journalist and Author", "Anne Bouverot, Government of France", "António Guterres, United Nations", "Balaraman Ravindran, Wadhwani School of Data Science & AI, IIT Madras", "Brad Smith, Microsoft Corporation", "Josephine Teo, Government of Singapore", "Soumya Swaminathan, World Health Organization", "Yoshua Bengio, Mila Institute"]}, {"title": "Fireside Chat", "startTime": "2:58 PM", "endTime": "3:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Srinivasan Iyengar, Senior Vice President - General Manager, Central Engineering Group,Intel", "Sagar Sharma, Head, Business Intelligence and Strategic Affairs, Tata Electronics", "Dr. Vivek Khaneja, Executive Director, CDAC", "Moderator: Aman Khanna, Vice President, Asia Group"]}, {"title": "Keynote", "startTime": "9:37 AM", "endTime": "9:47 AM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": []}, {"title": "Keynote", "startTime": "12:30 PM", "endTime": "12:42 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Marcus Wallenberg, Chairman SEB and Saab"]}, {"title": "Keynote", "startTime": "1:30 PM", "endTime": "1:40 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Uday Shankar, Vice Chairman, JioStar India Private Limited"]}, {"title": "Keynote", "startTime": "2:44 PM", "endTime": "2:56 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Vivek Mahajan, CTO, Fujitsu"]}, {"title": "Keynote", "startTime": "5:30 PM", "endTime": "5:40 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Dr Pramod Varma   Co-founder & Chief Architect,   Networks for Humanity (NFH)"]}, {"title": "Keynote - 2030: The Rise of an AI Storytelling Civilization", "startTime": "2:12 PM", "endTime": "2:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Neeraj Roy, Managing director of Hungama Digital Media Entertainment"]}, {"title": "Keynote Address", "startTime": "11:30 AM", "endTime": "11:40 AM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Raj Reddy, Turing Award–Winning AI Pioneer Professor Emeritus, Carnegie Mellon University"]}, {"title": "Panel: AI and the Creative Economy", "startTime": "1:40 PM", "endTime": "2:10 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Nicolas Granatino, Executive Chairman, Tara Gaming", "Kenichiro Natsume, Assistant Director General, WIPO", "Anna Tumadóttir, Chief Executive Officer, Creative Commons", "Moderator: Ameet Datta, Founder and Managing Counsel, ADP Law Offices"]}, {"title": "Panel: AI in DPI", "startTime": "5:42 PM", "endTime": "6:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Robert Opp, Chief Digital Officer, UNDP", "Dr. Hans Wijayasuriya, Chief Advisor to President of Sri Lanka on Digital Economy, Sri Lanka", "Saibal Chakraborty, Managing Director and Senior Partner, BCG", "Sangbu Kim, Vice President for Digital, World Bank", "Moderator: CV Madhukar, Chief Executive Officer, Co-Develop"]}, {"title": "Panel: AI in Healthcare", "startTime": "3:42 PM", "endTime": "4:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Dr Sabine Kapasi, Global Strategy Advisor UN DAC;  CEO, Enira Consulting", "R S Sharma, Former Chief Executive Officer, NHA", "L. Nneka Mobisson, Co-founder and Chief Executive Officer, mDoc", "Chris Ciauri, Managing Director for International, Anthropic"]}, {"title": "Panel: AI in Science", "startTime": "11:42 AM", "endTime": "12:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Irakli Beridze, Head, Centre for AI & Robotics, UNICRI", "Prof. Antoine Petit, CEO and Chairman of CNRS, France", "Joelle Pineau, Chief AI Officer, Cohere", "Dr. Amit Sheth, Founder, IAIRO.ai", "Moderator: Abhay Karandikar, Secretary, Department of Science and Technology"]}, {"title": "Panel: Data Sovereignty", "startTime": "9:49 AM", "endTime": "10:25 AM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Sunil Gupta, Managing Director and Chief Executive Officer, Yotta Data Services", "Nasubo Ongoma, COO, Qhala", "Seema Ambastha, Chief Executive Officer, L&T Vyoma"]}, {"title": "Panel: Inclusion, Innovation, and the Future of AI", "startTime": "12:44 PM", "endTime": "1:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Ivana Bartoletti, Global Chief Privacy & AI Governance Officer, Wipro", "Dean Ball, Senior Fellow, Foundation For American Innovation", "Gabriela Ramos Patino, Architect of the global ethical standard on AI", "Amanda Brock, CEO, OpenUK"]}, {"title": "Panel: Next Generation of Techies", "startTime": "4:42 PM", "endTime": "5:25 PM", "day": "20 Feb 2026", "location": "L2 Audi 2", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Navrina Singh, Founder & Chief Executive Officer, Credo AI", "Bipul Sinha, Chairman, Co-Founder & CEO, Rubrik", "Malhar Bhide, Chief Technology Officer, Origin Bio"]}, {"title": "Partnering on American AI Exports", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "L3 Plenary Hall", "building": "Bharat Mandapam", "track": "U.S. Embassy New Delhi", "description": "", "speakers": []}, {"title": "Fireside Chat", "startTime": "12:02 PM", "endTime": "12:22 PM", "day": "20 Feb 2026", "location": "L3 Plenary Hall", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Børge Brende, President & CEO, World Economic Forum", "Ashwini Vaishnaw, Minister for Railways, Information and Broadcasting & Electronics and Information Technology, Government of India"]}, {"title": "Panel Discussion", "startTime": "2:02 PM", "endTime": "2:42 PM", "day": "20 Feb 2026", "location": "L3 Plenary Hall", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Kristalina Georgieva, Managing Director, International Monetary Fund", "Doreen Bogdan-Martin, Secretary General, International Telecommunication Union", "Johanna Hill, Deputy Director General, World Trade Organization"]}, {"title": "Panel Discussion", "startTime": "4:08 PM", "endTime": "4:48 PM", "day": "20 Feb 2026", "location": "L3 Plenary Hall", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Salil Parekh, CEO, Infosys", "K. Krithivasan, CEO, Tata Consultancy Services", "C Vijayakumar, CEO & MD, HCL Technologies", "Arundhati Bhattacharya, Chairperson & CEO, Salesforce India", "Anand Deshpande, Founder, Chairman, & MD, Persistent Systems"]}, {"title": "पढ़AI 2.0: Reimagining Indian Education System", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "Nalanda Banquet", "building": "Sushma Swaraj Bhawan", "track": "Center of Policy Research and Governance", "description": "This session explores a bold vision of education in the age of AI, moving beyond incremental adoption to reimagine entire learning ecosystems. Drawing on global ideas and international best practices, it treats AI as a transformative force shaping pedagogy, assessment, institutions, and educator roles. The discussion encourages imaginative, future-oriented thinking around learner-centric, inclusive, human-centred models that use AI to enable personalised learning, creativity, and lifelong learning at scale for learners, teachers, and systems worldwide, equitably.", "speakers": ["Alondra Nelson, School of Social Science, Institute for Advanced Study", "Pankaj Arora, National Council for Teacher Education (NCTE)", "Pranav Gupta, UC Berkeley", "Yogesh Singh, University of Delhi"]}, {"title": "Artificial General Intelligence: A New Paradigm of Safety, Security, Privacy, Ethics, and Governance", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "Nalanda Banquet", "building": "Sushma Swaraj Bhawan", "track": "Data Security Council of India (DSCI)", "description": "Artificial general intelligence will intensify existing challenges around safety, security, privacy, ethics, and governance. This session will examine how current trajectories in advanced AI raise near-term governance questions, particularly for developing economies. It will explore institutional readiness, policy gaps, and risk pathways across data, compute, markets, and deployment contexts, and will surface practical considerations for anticipatory governance that can inform responsible decision-making before irreversible dependencies take hold.", "speakers": ["Mr. Atul Kumar, Government Initiatives & Global Trade . DSCI", "Mr. Avneesh Pandey, SEBI", "Mr. Hendrikus G.J. (Harry) Verweij, Netherland", "Mr. Kenny Kesar, Wipro", "Mr. Simonas, INFOBALT", "Mr. Vinayak Godse, Data Security Council of India", "Ms. Alexandra Bech Gjørv, SINTEF", "Ms. Aradhana Gupta, Data Security Council of India", "Ms. Nicole Foster, Amazon"]}, {"title": "Leadership Dialogue on AI in Mobility: Accelerating the Future of Intelligent Transport", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "Nalanda Banquet", "building": "Sushma Swaraj Bhawan", "track": "ITS India Industry Growth Forum", "description": "Leadership Dialogue on AI in Mobility: Accelerating the Future of Intelligent Transport", "speakers": ["Dr Shiv Kumar, ITS India Forum"]}, {"title": "Enterprise-Grade Responsible AI for India and the Global South", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "Nalanda Banquet", "building": "Sushma Swaraj Bhawan", "track": "Primus Partners", "description": "For India and the Global South, as AI systems move from pilots to mission-critical deployment across enterprises and governments, this challenge is amplified by fragmented and heterogeneous data, legacy IT infrastructure, uneven regulatory maturity, multilingual and culturally diverse populations, and high-impact use cases in finance, healthcare, welfare delivery, and public services. This session will examine what enterprise-grade responsible AI looks like in such contexts, grounded in real deployments rather than abstract frameworks.", "speakers": ["Anupam Chattopadhyay, College of Computing & Data Science, NTU Singapore", "Babak Hodjat, Cognizant", "Balaji Thiagarajan, Flipkart", "Hari Menon, Gates Foundation", "Mike Haley, Autodesk", "Raju Vegesna, Sify Technologies Ltd", "Shereen Bhan, CNBC-TV18"]}, {"title": "AI for Economic Growth & Social Good: Industry Synergies for Inclusive Innovation", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "Nalanda Banquet", "building": "Sushma Swaraj Bhawan", "track": "T-Hub Foundation", "description": "It is a high-level, solutions-oriented panel bringing together government, multilaterals, industry leaders, and innovation ecosystems to translate India's AI ambition into real-world impact. The session spotlights deployable AI use-cases across healthcare, agriculture, skilling, mobility, and financial inclusion, emphasizing responsible AI, blended finance, and cross-sector partnerships to scale beyond pilots toward measurable, population-level outcomes aligned with the IndiaAI Mission", "speakers": ["Archana, Sunlit Path Consulting", "Dr. Angela Lusigi, UNDP India", "Rekha Srinivasan, United Way of Hyderabad", "Yosuke Sato, JICA India"]}, {"title": "Fireside Chat", "startTime": "12:02 PM", "endTime": "12:22 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Børge Brende, President & CEO, World Economic Forum", "Ashwini Vaishnaw, Minister for Railways, Information and Broadcasting & Electronics and Information Technology, Government of India", "Moderator: Siddharth Zarabi, Editor, Business Today"]}, {"title": "Fireside Chat", "startTime": "2:17 PM", "endTime": "2:52 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Kristalina Georgieva, Managing Director, International Monetary Fund", "Doreen Bogdan-Martin, Secretary General, International Telecommunication Union", "Johanna Hill, Deputy Director General, World Trade Organization", "Josephine Teo, Minister of Digital Development and Information, Singapore", "Moderator: Mariano-Florentino Cuellar, President, Carnegie Endowment for International Peace"]}, {"title": "Keynote", "startTime": "9:30 AM", "endTime": "9:45 AM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Sundar Pichai, CEO, Google"]}, {"title": "Keynote", "startTime": "12:24 PM", "endTime": "12:36 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Jeetu Patel, President and Chief Product Officer, Cisco Inc"]}, {"title": "Keynote", "startTime": "12:38 PM", "endTime": "12:50 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Cristiano Amon, President and Chief Executive Officer, Qualcomm"]}, {"title": "Keynote", "startTime": "12:52 PM", "endTime": "1:04 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Ebba Busch, Deputy Prime Minister and Minister for Energy & Business, Sweden"]}, {"title": "Keynote", "startTime": "1:38 PM", "endTime": "1:48 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Hemant Taneja, Chief Executive Officer, General Catalyst"]}, {"title": "Keynote", "startTime": "1:38 PM", "endTime": "1:50 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Pratyush Kumar and Vivek Raghavan, Sarvam AI"]}, {"title": "Keynote", "startTime": "2:54 PM", "endTime": "3:06 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Kiran Mazumdar-Shaw, Chairperson, Biocon Group"]}, {"title": "Keynote", "startTime": "3:40 PM", "endTime": "3:52 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Matthew Prince, Chief Executive Officer, Cloudflare"]}, {"title": "Keynote", "startTime": "3:54 PM", "endTime": "4:06 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Vijay Shekar Sharma, CeO, Paytm"]}, {"title": "Keynote", "startTime": "4:08 PM", "endTime": "4:20 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Ananya Birla, Birla AI Labs"]}, {"title": "Keynote", "startTime": "4:22 PM", "endTime": "4:34 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Takahito Tokita, President and CEO Fujitsu"]}, {"title": "Keynote", "startTime": "5:13 PM", "endTime": "5:25 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Lt Gen Vipul Shinghal, AVSM, SM Deputy Chief of the Army Staff (Information Systems & Training)"]}, {"title": "Panel", "startTime": "4:36 PM", "endTime": "5:11 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Salil Parekh, Chief Executive Officer, Infosys", "K. Krithivasan, Chief Executive Officer, Tata Consultancy Services", "C Vijayakumar, Chief Executive Officer & Managing Director, HCL Technologies", "Arundhati Bhattacharya, Chairperson & Chief Executive Officer, Salesforce India", "Moderator: Amitabh Kant, Former Chief Executive Officer, NITI Aayog"]}, {"title": "Panel Discussion", "startTime": "1:06 PM", "endTime": "1:36 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["John Palfrey, President of the John D. and Catherine T. MacArthur Foundation", "Terah Lyons, Managing Director & Global Head of AI & Data Policy, JP Morgan Chase", "Paula Ingabire, Minister of ICT and Innovation,   Government of Rwanda", "Evan Solomon, Minister of AI and Digital Innovation and Minister of Federal Economic Development for Southern Ontario, Canada", "Stephen Byrd, Global Head of Thematic Research, Morgan Stanley", "Moderator: Rudra Chaudhuri, Vice President, Observer Research Foundation"]}, {"title": "Panel Discussion", "startTime": "3:08 PM", "endTime": "3:38 PM", "day": "20 Feb 2026", "location": "Plenary Hall - A", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Sanjeev Bikhchandani, Founder & Executive Vice Chairman, Info Edge (India)", "Deepak Bagla, Mission Director, Atal Innovation Mission", "Radhicka Kapoor, Senior Employment Specialist, Decent Work Team for South Asia, International Labour Organization"]}, {"title": "Keynote", "startTime": "2:44 PM", "endTime": "2:56 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Thomas Scheider, Ambassador, Vice-Director and Co-Director of International Relations (OFCOM), Switzerland"]}, {"title": "Keynote", "startTime": "3:30 PM", "endTime": "3:42 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Giordano Albertazzi, Chief Executive Officer, Vertiv"]}, {"title": "Panel", "startTime": "12:44 PM", "endTime": "1:25 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Anna Paula, SVP and Chair Asia Pacific and Asia EMEM, IBM Corporation", "Rajesh Varrier - President Global Operations, Chairman & Managing Director, Cognizant India", "Sharad Agarwal, CEO Sify Inifinit Spaces Ltd"]}, {"title": "Panel", "startTime": "2:58 PM", "endTime": "3:25 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Lakshmi Pratury, Founder and CEO, INK Global Foundation", "Kirthiga Reddy, CEO, OptimizeGEO and Founder, AI Kiran", "Neeru Khosla, Founder, CK12", "Archana Vemulapalli, Corporate Vice President, AMD"]}, {"title": "Panel: AI First Education", "startTime": "1:44 PM", "endTime": "2:25 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Olayinka David-West, Dean and Professor of Information Systems, Lagos Business School", "Theo Farrell, President and Deputy Vice-Chancellor, La Trobe University", "Moderator: Jagdish Babu, Chief Operating Officer, EkStep Foundation", "Mustafa Furniturewala, CTO, Coursera"]}, {"title": "AI Accelerators: Fueling India's Economic Growth via State-Level AI Adoption", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "Google Cloud", "description": "Anchored in Cooperative Federalism, this session pivots the IndiaAI Mission from Central policy to State-led execution. As the \"National Enabler,\" we connect MeitY's infrastructure with regional growth engines. The strategic mandate is precise: The Centre constructs the digital highways, while States drive adoption - transforming AI capabilities into the catalyst for a Viksit Bharat.", "speakers": ["Jitin Prasada, Ministry of Commerce & Industry; and Electronics & IT", "N Chandrababu Naidu, Government of Andhra Pradesh", "Himanta Biswa Sarma, Government of Assam", "Yolynd Lobo, Google Cloud"]}, {"title": "Keynote", "startTime": "4:17 PM", "endTime": "4:29 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Ashish Koshy, Chief Executive Officer, Inception"]}, {"title": "Panel", "startTime": "3:44 PM", "endTime": "4:15 PM", "day": "20 Feb 2026", "location": "Plenary Hall - B", "building": "Bharat Mandapam", "track": "", "description": "", "speakers": ["Gonçalo Saraiva Matias, Minister to the Prime Minister & for state reform, Portugal", "Alioune SALL, Minister of Communication, Telecommunications and Digital Affairs, Senegal", "Dr. Avinash Ramtohul, Minister of Information Technology, Communication and Innovation, Mauritius", "Faisal Albannay, Advisor to the UAE President for Strategic Research and Advanced Technology Affairs"]}, {"title": "Building Trustworthy AI: Foundations and Practical Pathways", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "Ashoka University", "description": "Building Trustworthy AI is an impact-focused workshop examining how responsible and transparent AI systems can enable inclusive, ethical, and sustainable innovation in India. The session includes an interactive exploration of data consent and privacy in real-world AI deployments, the launch of the research paper ASTRA: AI Safety, Trust, & Risk Assessment, and a multi-stakeholder roundtable discussing practical pathways to advance trustworthy AI across policy, industry, and society.", "speakers": ["Chanda Grover, Ashoka University", "Dr. Aalok Thakkar, Ashoka University", "Dr. Anirban Sen, Ashoka University", "Dr. Debayan Gupta, Ashoka University"]}, {"title": "Designing Health AI for Bharat - A Billion Clinical Realities", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "Eka Care", "description": "As AI is integrated more closely into indian health care, this discussion brings together pioneers across technology, public systems, and deep last-mile knowledge, public systems and last mile delivery. The session will study ground realities in the Health-AI space. Drawing on institutional memory and frontier innovation, the session explores how Artificial Intelligence must evolve with people, infrastructure and ecosystems to deliver resilient and inclusive health outcomes at population scale.", "speakers": ["Karthik Adapa, WHO", "Kiran Gopal Vaska, NHA", "Ms. Aswathy S., IAS, Department of Health & Family Welfare", "Prof. Rajendra Pratap Gupta, Parliament Health", "Prof. Rajendra Pratap Gupta, Parliament Health", "Shalini Kapoor, Ek Step Foundation"]}, {"title": "AI and Intellectual Property: Building an Equitable Innovation Ecosystem", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "FICCI", "description": "The session will explore India's strategic opportunity to shape global discourse on AI-IP governance, assess policy imperatives relating to AI-driven innovation, frontier model development, AI applications, and small-model innovation as highlighted in the Economic Survey 2026-27, and underscore India's development priorities supported by its strengthening digital ecosystem, an expanding startup base, and ongoing AI-related IP reforms.", "speakers": ["Dr. Ulrike Till, World Intellectual Property Organization", "Mr. Ameet Datta, ADP Law Offices", "Mr. Amit Kumar, Tejas Networks", "Mr. Blaise Fernandes, Indian Music Industry", "Mr. Kenichiro Natsume, World Intellectual Property Organization", "Mr. Mihir Rale, Cyril Amarchand Mangaldas", "Mr. Munish Sudan, Tata Steel", "Mr. Munjal B. Shroff, Graphiti Studios", "Mr. Rajiv Aggarwal, Samsung India Electronics Ltd", "Mr. Satyoki Koundinya, Nokia"]}, {"title": "Developing Eastern India's Tech Hub", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "Government of Bihar", "description": "", "speakers": []}, {"title": "Evaluations and Open Source Software for AI for Social Good at Scale", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "Humane Intelligence", "description": "Aligned with the People, Planet, and Progress Sutras, this session explores how evaluations and open source software can help AI for social good scale responsibly. It will examine how red teaming surfaces factuality issues, language gaps, bias, and hallucinations in high-stakes domains including education, food security, and public health. Using the Summit's framing on inclusion, trust, and access, we will gather user needs to guide our open source red teaming app release.", "speakers": ["Mr. Ashwani Sharma, Scientific Progress Team, Foundational Research, Google", "Mr. Sanket Verma, NumFOCUS", "Ms. Mala Kumar, Humane Intelligence", "Ms. Tarunima Prabakhar, Tattle Civic Technologies"]}, {"title": "Founders' Adda", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "Rukam Capital", "description": "The Adda is a forum for AI founders to move past polished narratives and into candid, practical exchange. It is designed to surface what is actually working, where real friction exists, and how the ground is shifting as teams build products, hire talent, navigate regulation, and scale. The focus is on lived operating experience shared honestly, peer to peer so founders leave with insight, not soundbites.", "speakers": ["Archana Jahagirdar, Rukam Capital", "Pradyum Gupta, Papli Labs", "Ravinder Kumar, Tecnod8.AI", "Rohan Chaudhary, Rumik.ai", "Vaibhav Vats Shukla, Quansys AI"]}, {"title": "AI Literacy and Building for Children in a Digital Age", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "Retreat Lounge", "building": "Bharat Mandapam", "track": "The LEGO Group", "description": "The pace of AI can feel overwhelming and, rightly, increasing attention is being given to minimizing its negative impacts on children. However, it is not enough for children to simply adapt to AI - they also need foundational competencies to understand, engage with and critically assess the systems of the future. Experts will discuss approaches to AI literacy and explore how to build empowering technology for children.", "speakers": ["​Atish Joshua Gonsalves, LEGO Education", "Dr. Saadhna Panday, UNICEF India", "Richa Menke, LEGO Group", "Tom Hall, LEGO Education"]}, {"title": "India's Path to an AGI-Enabling Ecosystem", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "Shakuntalam Banquet", "building": "Sushma Swaraj Bhawan", "track": "Gan – Chariot", "description": "This session brings together perspectives on what it takes to  create an ecosystem capable of supporting frontier-scale AI research in  India. Speakers from compute and energy infrastructure, academia and industry will discuss the conditions required for long-horizon research,  large-scale experimentation and the development of all five layers of the AI  infrastructure. The discussion will highlight how human capital  development, strengthening science ecosystems, and democratizing AI resources will advance AI development in India.", "speakers": ["Parth Sarthi, Gan Chariot", "Shri Ghanshyam Prasad, Central Electricity Authority, Ministry of Power and Ex-Officio Secretary to the Government of India", "Shri Tarun Dua ji, one of the impaneled CSPs for IndiaAI Mission", "Suvrat Bhooshan, Gan Chariot"]}, {"title": "Beyond Proof of Concepts: Using 4D-AI to Build Sovereign, Sustainable and Responsible AI at Production Scale", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "Shakuntalam Banquet", "building": "Sushma Swaraj Bhawan", "track": "Kainos", "description": "A fast paced, practical session for government and industry leaders who need AI that works in production—not just in pilots. Join us to explore the four dimensions of Trusted AI and discover actionable strategies for scaling secure, responsible, and sovereign AI across the globe.", "speakers": ["Omeed Hashim, Kainos", "Theresa Yurkewich Hoffmann, Kainos"]}, {"title": "Protecting Global Citizens by Securing Communications with AI", "startTime": "5:30 PM", "endTime": "6:30 PM", "day": "20 Feb 2026", "location": "Shakuntalam Banquet", "building": "Sushma Swaraj Bhawan", "track": "Tanla Platforms Limited", "description": "This session showcases the \"Made in India\" Wisely AI solution where the burden of fending off the fraudster is moved from the individual to the intelligent network core. This discussion will explore the regulatory, technical, and business dimensions of deploying AI-led security at a national scale.", "speakers": ["Anshuman Kar, Tanla Platform Limited", "Ratan Kumar Kesh, Bandhan Bank", "Robert J. Ravi, BSNL", "Bipin Preet Singh, Mobikwik", "Neha Gupta Mahatme, Amazon Pay India", "Uday Reddy, Tanla Platforms Limited", "Vikram Sinha, Indosat Ooredoo Hutchison", "Naiyya Saggi, Tanla", "Sanjay Kapoor, Airtel"]}, {"title": "Embedded Governance for AI in Finance: An India-First, Risk-Based Policy Dialogue", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "Shakuntalam Banquet", "building": "Sushma Swaraj Bhawan", "track": "The Dialogue", "description": "This panel discussion will bring together regulators, financial institutions, and fintech stakeholders to examine how risk-based, embedded governance frameworks for artificial intelligence can be designed and operationalised within India's financial ecosystem. The discussion will focus on approaches to balancing innovation with trust, accountability, and supervisory oversight across emerging AI use cases in credit, payments, fraud detection, and compliance.", "speakers": ["Ajay Kumar Chaudhary, NPCI", "⁠Murlidhar Manchala, Dept of Fintech, RBI", "Praveen Kamat, IFSCA", "Sanjeev Sanyal, Economic Advisory Council to the Prime Minister"]}, {"title": "Trusted AI at Scale: A Global South Leadership Dialogue", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "AI Safety Asia", "description": "This roundtable brings together senior ICT leaders from the global south to turn the Summit's \"Safe & Trusted AI\" Chakra into practical action. Focusing on embedding institutional safety into fast‑moving AI deployment, it bridges Global North–South governance gaps by translating policy into implementation. The dialogue blends private‑sector risk expertise with public‑sector scale, positioning New Delhi as a hub for inclusive, interoperable AI strategies", "speakers": ["Deepali Khanna, The Rockefeller Foundation", "Deepali Khanna, The Rockefeller Foundation", "Eugenio V. Garcia, Ministry of Foreign Affairs, Brazil", "Ima Abdulrahim, AI Safety Asia", "Kip Wainscott, JPMC", "Parag Khanna, AlphaGeo", "Philip Thigo, Tech Ambassador, Kenya", "Purushottam Kaushik, World Economic Forum"]}, {"title": "Building AI Readiness: From Compute to Capability", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "AMD", "description": "The proliferation of Generative AI, driven by the advent of Large Language Models (LLMs), Visual Language Models (VLMs), and Agentic workflows, has fundamentally transformed the requirements for high-performance computing infrastructure. For the users of the IndiaAI compute portal and the broader ecosystem, the selection of Graphics Processing Units (GPUs) has evolved from a simple metric of peak floating-point performance (FLOPS) into a complex optimization challenge involving memory bandwidth, interconnect topology, and architectural specialization.", "speakers": ["Dr. Paneerselvam M, Ministry of Electronics & IT", "Thomas Zacharia, AMD", "Timothy Robson, AMD"]}, {"title": "Preparing for the Future: AI-Driven Strategies for  Workforce and Economic Growth", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "Confederation of Indian Industry (CII)", "description": "AI can accelerate economic growth by improving efficiency and enabling new forms of innovation. Preparing for the future means treating AI not just as an automation tool, but as a strategic partner for productivity and growth. By 2030, AI adoption across sectors such as manufacturing, healthcare and finance is expected to add trillions to the global economy. As organizations integrate AI, careers increasingly combine machine speed and accuracy with human judgment, empathy, and contextual understanding.", "speakers": ["Mr Chandrajit Banerjee, Confederation of Indian Industry", "Mr Puneet Chandok, Confederation of Indian Industry", "Mr Rajeev Memani, Confederation of Indian Industry", "Ms Ipsita Dasgupta, CII and  HP"]}, {"title": "Exploring a Regulatory Framework for Open Data", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "Cyril Amarchand Mangaldas", "description": "Open data is becoming a core pillar of the global AI ecosystem, enabling innovation, evidence-based policymaking, and improved public service delivery. While high-quality datasets are essential for advanced AI, their governance poses complex challenges. This panel examines the opportunities and challenges presented by executive and sector-specific measures, and statutory frameworks for open data. Bringing together policymakers, legal experts, and industry the discussion will explore balancing openness with safeguards, and innovation with accountability.", "speakers": ["Arun Prabhu, Cyril Amarchand Mangaldas", "Cyril Shroff, Cyril Amarchand Mangaldas", "Dr Shashi Tharoor, Lok Sabha", "Dr. Sasmit Patra, Rajya Sabha, India", "Prof.  (Dr.) C. Raj Kumar, O.P. Jindal Global University", "Rama Vedashree,"]}, {"title": "Scaling Climate Solutions: Data, AI, and India's Energy Transformation", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "data.org", "description": "Open data and AI can significantly strengthen climate resilience and help India meet its net zero target by 2070 and 500 GW renewable capacity by 2030. Achieving this requires faster digital transformation across climate and energy institutions and stronger Climate AI talent to break silos. This session convenes experts to examine the building blocks of a climate-energy data ecosystem, showcasing real-world use cases", "speakers": ["Akhilesh Magal, Climate Dot Foundation", "Dr. Cormekki Whitley, data.org", "Dr. Neelanjan Sircar, Ahmedabad University", "Dr. Priya Donti, MIT EECS and LIDS", "Karan Shah, Artha India", "Priyank Hirani, data.org", "Srinivas Krishnaswamy, Vasudha Foundation", "Swetha Ravi Kumar, FSR Global"]}, {"title": "Who Watches the Watchers? Exploring Independent Verification in AI Governance", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "Fathom", "description": "This session explores how independent assurance, operationalised through a marketplace of independent verification organisations, can support greater trust and adoption in artificial intelligence systems. The discussion will bring together AI policymakers and experts to examine mechanisms for realigning developer and deployer incentives with the public interest across different country contexts.", "speakers": ["Dean Ball, Foundation for American Innovation; Fathom", "Gregory C. Allen, CSIS Wadhwani Center, Center for Strategic and International Studies", "Shana Mansbach, Fathom"]}, {"title": "Shaping the Semiconductor Workforce in the Age of AI", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 A", "building": "Bharat Mandapam", "track": "Lam Research", "description": "A discussion with senior Government officials, academia, and industry leadership on building scalable and holistic workforce frameworks to support the semiconductor industry and the next generation of AI-powered technologies.", "speakers": ["David Fried, Lam Research", "Mr. Anand Ramamoorthy, Micron Technology Operations India", "Mr Paul Triolo, DGA", "Mr S Krishnan, GoI", "Mr Saurabh Chandorkar, Centre for Nanoscience And Engineering, IISC", "Rangesh Raghavan, Lam Research", "Shri Ashwini Vaishnaw, GoI"]}, {"title": "India at the Centre of the Global AI and Semiconductor Power Shift", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "AMD", "description": "The session will have discussion around the convergence of artificial intelligence, semiconductors, and geopolitics, and its implications for global competitiveness, supply chain resilience, and technological trust. As AI becomes a strategic national asset, the session will explore how policy leadership, technological cooperation, and private-sector innovation must align to build secure, resilient, and inclusive AI ecosystems, while highlighting India's emerging role in the global AI and semiconductor value chain.", "speakers": ["Dr Vivek Kumar Singh, NITI Aayog, GoI", "Dr. Thomas Zacharia, AMD", "Jaya Jagadish, Silicon Design Engineering, AMD", "Rahul Garg, Moglix"]}, {"title": "Open Networks in the Global South", "startTime": "12:30 PM", "endTime": "1:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "Haqdarshak Empowerment Solutions Private Limited", "description": "The session will explore how open digital networks and interoperable public infrastructure, supported by Artificial Intelligence, are transforming digital economies in the Global South. Drawing on experiences such as UPI and ONDC in India and emerging open networks. The discussion will focus on inclusive payments, commerce, and innovation for small merchants and consumers.", "speakers": ["Mr. Aniket Doegar, Haqdarshak", "Mr. Sachin Gopalan, Indonesia Economic Forum", "Mr. Sujith Nair, Beckn Labs", "Mr. T Koshy, ONDC", "Ms. Savita Muley, Haqdarshak"]}, {"title": "Sovereign AI for India: Designing the Nation's Future Compute, Data and Innovation Ecosystem", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "Nasscom", "description": "This panel will explore how India can build sovereign AI capabilities across compute, data, models, and governance to reduce dependence on foreign systems while aligning AI development with national priorities and constitutional values. The discussion will examine the democratization of AI resources, trusted governance frameworks, affordable national compute infrastructure, India-centric datasets, responsible AI practices, and ways to strengthen India's voice in global AI standards and negotiations.", "speakers": ["Ankit Bose, Nasscom AI", "Bhaskar Gorti, Tata Communications", "Breno Melo, Genspark", "Kalyan Kumar, HCLSoftware", "Prof. Ganesh Ramakrishnan, Bharat Gen", "Sunil Gupta, Yotta"]}, {"title": "Governing Scientific AI at Scale: Safety, Evaluation, and Institutional Readiness", "startTime": "9:30 AM", "endTime": "10:30 AM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "RAND Europe", "description": "As capabilities scale, existing assurance and risk management approaches are often stretched by real-world scientific and institutional contexts. This session examines how safety, evaluation, governance frameworks can be adapted and stress-tested through scientific AI use cases, and how emerging ecosystems can build evaluation capacity, manage high-impact risks, and contribute to globally robust scientific AI safety practices.", "speakers": ["Dr. Geetha Raju, CeRAI - IIT Madras", "Dr. Shyam Krishna, RAND Europe", "Dr. Suryesh Kumar Namdeo, Indian Institute of Science, Bangalore", "PT Nhean, AI Safety Asia"]}, {"title": "How Non-Profits are using AI-based Innovations to Scale Impact", "startTime": "11:30 AM", "endTime": "12:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "Sattva Consulting Pvt Ltd", "description": "Join social sector leaders for a grounded look at a six-month AI Cohort Program. Featuring insights from seven NGOs, this session explores the transition from initial ideas to piloted solutions. Speakers will share reflections on strategic objectives, approaches, challenges, and learnings. Gain a practical framework for implementing responsible, use-case-driven AI in the social sector, backed by real-world outcomes and lessons learned during the journey from concept to impact.", "speakers": ["Erica Arya, Project Tech4Dev", "Mainak Roy, Simple Education Foundation", "Manohar Sreekanth, Sattva Consulting", "Pritam Sukumar, Avanti Fellows", "Steven Suting, QUEST Alliance", "Temina Madon, The Agency Fund"]}, {"title": "Rightsizing Governance in an AI-Driven World", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "techUK", "description": "This panel explores how India and partner nations can use AI for real-world impact, bridge digital divides, and support inclusive growth. Aligned with the UK–India strategic tech partnership, it shows how global forums can turn shared ambition into action on AI governance and deployment. The discussion covers shared compute and data, support for smaller states, and high-impact collaboration across healthcare, education, and climate for responsible AI at scale.", "speakers": ["Isabella Wilkinson, Chatham House", "Melika Carroll, Cohere", "Navrina Singh, Credo", "Raffi Krikorian, Mozilla", "Rajesh Nambiar, Nasscom", "Sabina Ciofu, techUK"]}, {"title": "Collective AI for Indian Society", "startTime": "1:30 PM", "endTime": "2:30 PM", "day": "20 Feb 2026", "location": "West Wing Room 4 B", "building": "Bharat Mandapam", "track": "University of Bristol", "description": "Can Collective AI close the AI Divide? Collective AI is designed to support whole populations rather than one user at a time. This panel brings together industrial and academic AI leaders to explain and explore Collective AI's huge potential for societal impact across areas like healthcare, democracy, etc. It will address the technical and sociotechnical challenges that must be overcome if Collective AI is to deliver on its huge promise.", "speakers": ["Antaraa Vasudev, Civis", "Dr. Nirav Ajmeri, University of Bristol", "Janhavi Pawar, Sakal Media Group", "Kushe Bahl, McKinsie & Co", "Prof. D. Manjunath, IIT Bombay", "Prof. Seth Bullock, University of Bristol"]}, {"title": "The Intelligent Image: How AI Is Transforming Filmmaking", "startTime": "4:30 PM", "endTime": "5:30 PM", "day": "20 Feb 2026", "location": "West Wing Room No. 6", "building": "Bharat Mandapam", "track": "Collective Artists Network", "description": "A curated conversation bringing together filmmakers, creators, marketers, and tech leaders to explore how GenAI is reshaping storytelling, culture, and commerce. The session uses live case studies while examining how platforms, creators, and AI together are birthing the next generation of IP, franchises, and cultural movements.", "speakers": ["Manu Anand, Filmmaker", "Rahul Regulapati, Galleri5", "Rajesh Mapuskar, Filmmaker", "Sanjay Puran Singh Chauhan, Filmmaker", "Vijay Subramaniam, Collective Artists Network"]}, {"title": "Capacity Building in Digital Health", "startTime": "2:30 PM", "endTime": "3:30 PM", "day": "20 Feb 2026", "location": "West Wing Room No. 6", "building": "Bharat Mandapam", "track": "Health Parliament", "description": "Artificial Intelligence has rapidly achieved technical maturity across its first two developmental levels, yet organizational maturity has not kept pace. This panel examines the critical gap between AI capability and institutional readiness. It will explore how targeted capacity building, across leadership, workforce, governance, and processes, can unlock AI's full value. The discussion focuses on activating impact from the bottom of the value chain, ensuring AI adoption translates into measurable outcomes rather than isolated technological success.", "speakers": ["Col. (Dr.) Sarvjeet Kaur, Indian Nursing Council", "Dr. Rajeev Singh Raghuvanshi, CDSCO, Govt. of India", "Dr. Rajendra Pratap Gupta, Academy of Digital Health Sciences", "Dr. Suresh Yadav, The Commonwealth", "Mr. Aneesh Chopra, Government of the United States, under President Barack Obama", "Mr. Zaw Ali Khan, Criterion Tech", "Shri D. Sridhar Babu, Government of Telangana"]}, {"title": "Harnessing AI to Manage Climate Extremes and Build Sustainable Systems", "startTime": "3:30 PM", "endTime": "4:30 PM", "day": "20 Feb 2026", "location": "West Wing Room No. 6", "building": "Bharat Mandapam", "track": "Indian AI Research Organisation", "description": "The panel discussion will convene leading researchers, technocrats, investors, and policymakers to explore \"AI for Sustainability and Sustainable AI.\" It will examine how AI can accelerate India's transition toward climate resilience and sustainable growth, particularly in managing compounding extreme events at hyper-local scales and services for impacted sectors operations. Aligned with the summit's Planet focus, the panel will discuss science driven innovation, trusted systems, and pathways to translate ideas from lab to product ecosystems.", "speakers": ["Dev Niyogi, University of Texas at Austin, Jackson School of Geosciences", "Dr. Akshara Kaginalkar, Atria University, Bangalore", "Dr. Karthik Kashinath, Nvidia", "Dr. M. Ravichandran, Ministry of Earth Sciences", "Dr. Praphul Chandra, Atria University", "Dr. Shivkumar Kalayanaraman, ANRF", "Er. Manish Bhardwaj, National Disaster Mitigation Authority (NDMA)", "Mr. Sandeep Singhal, Avaana Capital", "Prof Amit Sheth, IAIRO & Univ. of South Carolina"]}, {"title": "Heterogeneous Compute for Democratizing Access to AI: From Workload Awareness to Scalable Deployment", "startTime": "10:30 AM", "endTime": "11:30 AM", "day": "20 Feb 2026", "location": "West Wing Room No. 6", "building": "Bharat Mandapam", "track": "Intel Technology India Pvt. ltd.", "description": "This practitioner-led session will discuss how to address critical challenge of making AI economically viable and globally accessible by moving beyond the \"GPU-only\" paradigm to strategic, workload-aware compute architectures. Featuring technology leaders alongside government stakeholders, panel will demonstrate how matching AI workloads to the right hardware mix—CPUs, NPUs, TPUs, and GPUs—can reduce costs while maintaining performance i.e., maximize RoI. The discussion focuses on practical deployment strategies, from edge-cloud orchestration to real-world placement decisions.", "speakers": ["Bhawna Agarwal, Hewlett Packard Enterprise, India", "Daisy Chittilapilly, Cisco", "Dr. Durga Malladi, Qualcomm", "Gokul Subramaniam, Intel India", "Kazim Rizvi, The Dialogue", "Prof. Kamakoti V., Padma Shree, IIT Madras", "Shri D. Sridhar Babu, Telangana Government"]}], "timeSlots": ["9:30 AM", "9:37 AM", "9:45 AM", "9:47 AM", "9:49 AM", "10:00 AM", "10:25 AM", "10:30 AM", "11:00 AM", "11:30 AM", "11:40 AM", "11:42 AM", "12:00 PM", "12:02 PM", "12:22 PM", "12:24 PM", "12:25 PM", "12:30 PM", "12:36 PM", "12:38 PM", "12:42 PM", "12:44 PM", "12:50 PM", "12:52 PM", "1:00 PM", "1:04 PM", "1:06 PM", "1:25 PM", "1:30 PM", "1:36 PM", "1:38 PM", "1:40 PM", "1:44 PM", "1:48 PM", "1:50 PM", "2:00 PM", "2:02 PM", "2:10 PM", "2:12 PM", "2:17 PM", "2:25 PM", "2:30 PM", "2:42 PM", "2:44 PM", "2:52 PM", "2:54 PM", "2:56 PM", "2:58 PM", "3:06 PM", "3:08 PM", "3:25 PM", "3:30 PM", "3:38 PM", "3:40 PM", "3:42 PM", "3:44 PM", "3:52 PM", "3:54 PM", "4:06 PM", "4:08 PM", "4:15 PM", "4:17 PM", "4:20 PM", "4:22 PM", "4:25 PM", "4:29 PM", "4:30 PM", "4:34 PM", "4:36 PM", "4:42 PM", "4:48 PM", "5:11 PM", "5:13 PM", "5:25 PM", "5:30 PM", "5:40 PM", "5:42 PM", "6:25 PM", "6:30 PM"], "locations": [{"name": "Chanakya Auditorium", "sub": "Sushma Swaraj Bhawan"}, {"name": "Hall No. 3 First Floor - Conference Room 4", "sub": "Bharat Mandapam - Expo Area"}, {"name": "Hall No. 4 First Floor - Conference Room 2", "sub": "Bharat Mandapam - Expo Area"}, {"name": "Hall No. 4 First Floor - Conference Room 3", "sub": "Bharat Mandapam - Expo Area"}, {"name": "Hall No. 5 First Floor - Conference Room 1", "sub": "Bharat Mandapam - Expo Area"}, {"name": "L1 Meeting Room No. 16", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 17", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 9", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 10", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 15", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 18", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 19", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 6", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 7", "sub": "Bharat Mandapam"}, {"name": "L1 Meeting Room No. 8", "sub": "Bharat Mandapam"}, {"name": "L2 Audi 1", "sub": "Bharat Mandapam"}, {"name": "L2 Audi 2", "sub": "Bharat Mandapam"}, {"name": "L3 Plenary Hall", "sub": "Bharat Mandapam"}, {"name": "Nalanda Banquet", "sub": "Sushma Swaraj Bhawan"}, {"name": "Plenary Hall - A", "sub": "Bharat Mandapam"}, {"name": "Plenary Hall - B", "sub": "Bharat Mandapam"}, {"name": "Retreat Lounge", "sub": "Bharat Mandapam"}, {"name": "Shakuntalam Banquet", "sub": "Sushma Swaraj Bhawan"}, {"name": "West Wing Room 4 A", "sub": "Bharat Mandapam"}, {"name": "West Wing Room 4 B", "sub": "Bharat Mandapam"}, {"name": "West Wing Room No. 6", "sub": "Bharat Mandapam"}]};
+
+// Robust CSV parser that handles quoted fields with embedded newlines/commas
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i], next = text[i + 1];
+
+    if (inQuotes) {
+      if (ch === '"' && next === '"') { field += '"'; i++; }       // escaped quote
+      else if (ch === '"')            { inQuotes = false; }         // end quote
+      else                            { field += ch; }
+    } else {
+      if      (ch === '"')  { inQuotes = true; }
+      else if (ch === ',')  { row.push(field); field = ''; }
+      else if (ch === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else                  { field += ch; }
+    }
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function csvToObjects(rows) {
+  const headers = rows[0].map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, '_'));
+  return rows.slice(1).filter(r => r.some(c => c.trim())).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (row[i] || '').trim());
+    return obj;
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  DATA CLEANUP
+// ══════════════════════════════════════════════════
+
+function normalizeTime(t) {
+  // Handles "10:00 AM", "10:00AM", "10:00" (assumes AM if < 8, PM if >= 1 and no indicator)
+  if (!t) return '';
+  t = t.trim().toUpperCase();
+  // Already well-formed
+  if (/^\d{1,2}:\d{2} [AP]M$/.test(t)) return t;
+  // Missing space before AM/PM
+  t = t.replace(/([AP]M)$/, ' $1').replace(/\s+/, ' ');
+  return t;
+}
+
+function parseDate(d) {
+  if (!d) return '';
+  // Handles "20-Feb-26", "2026-02-20", "Feb 20, 2026", etc.
+  const parsed = new Date(d);
+  if (!isNaN(parsed)) return parsed.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return d;
+}
+
+function cleanSpeakers(raw) {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) return arr.map(s => s.speaker_list || s.name || s).filter(Boolean);
+  } catch(e) {}
+  // Fallback: plain comma or semicolon separated
+  return raw.split(/[;|]/).map(s => s.trim()).filter(Boolean);
+}
+
+function transformRow(r) {
+  // Split "10:00 AM - 11:00 AM" into start/end
+  const timeParts = (r.time || '').split(/\s*-\s*/);
+  const startTime = normalizeTime(timeParts[0]);
+  const endTime   = normalizeTime(timeParts[1] || '');
+
+  // Combined location: room inside building
+  const location = r.room || r.building || '';
+
+  // Clean description: remove embedded newlines
+  const description = (r.desc || '').replace(/[\r\n]+/g, ' ').trim();
+
+  // Parse date into a day label
+  const day = parseDate(r.date) || r.date || 'Day 1';
+
+  return {
+    day,
+    title:       r.title || '(Untitled)',
+    startTime,
+    endTime,
+    location,
+    building:    r.building || '',
+    track:       r.partner || '',   // using partner as track/category
+    speakers:    cleanSpeakers(r['speaker_list'] || r['speaker_list_json_'] || r['speaker_list__json_'] || ''),
+    description,
+  };
+}
+
+// ══════════════════════════════════════════════════
+//  BUILD TIME SLOTS FROM DATA
+// ══════════════════════════════════════════════════
+
+function buildTimeSlots(sessions) {
+  if (TIME_SLOTS_OVERRIDE) return TIME_SLOTS_OVERRIDE;
+
+  // Collect all unique times and sort chronologically
+  const times = new Set();
+  sessions.forEach(s => {
+    if (s.startTime) times.add(s.startTime);
+    if (s.endTime)   times.add(s.endTime);
+  });
+
+  return [...times].sort((a, b) => {
+    const toMins = t => {
+      const [time, period] = t.split(' ');
+      let [h, m] = time.split(':').map(Number);
+      if (period === 'PM' && h !== 12) h += 12;
+      if (period === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    };
+    return toMins(a) - toMins(b);
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  BUILD LOCATIONS FROM DATA
+// ══════════════════════════════════════════════════
+
+function buildLocations(sessions) {
+  const seen = new Map();
+  sessions.forEach(s => {
+    if (s.location && !seen.has(s.location)) {
+      seen.set(s.location, { name: s.location, sub: s.building !== s.location ? s.building : '' });
+    }
+  });
+  return [...seen.values()];
+}
+
+// ══════════════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════════════
+
+let sessions = [], timeSlots = [], locations = [];
+let activeDay = '', activeFilter = 'all', searchQuery = '';
+
+// ══════════════════════════════════════════════════
+//  INIT FROM EMBEDDED DATA
+// ══════════════════════════════════════════════════
+(function() {
+  sessions  = EMBEDDED_DATA.sessions;
+  timeSlots = EMBEDDED_DATA.timeSlots;
+  locations = EMBEDDED_DATA.locations;
+  const days = [...new Set(sessions.map(s => s.day))];
+  activeDay = days[0];
+  document.getElementById('conf-meta').textContent = `${days.length} day${days.length > 1 ? 's' : ''} · ${sessions.length} sessions · Click any session for details`;
+  initFilters();
+  initDayTabs(days);
+  render();
+})();
+
+// ══════════════════════════════════════════════════
+//  UI INIT
+// ══════════════════════════════════════════════════
+
+document.getElementById('conf-label').textContent = CONFIG.label;
+document.getElementById('conf-title').textContent = CONFIG.title;
+document.getElementById('conf-meta').textContent  = CONFIG.meta;
+
+
+
+function sessionText(s) {
+  return [s.title, s.description, s.track, s.location, s.building, ...(s.speakers||[])]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
+function matches(s) {
+  return !searchQuery || searchQuery.trim().split(' ').filter(Boolean).every(function(w) { return sessionText(s).includes(w); });
+}
+
+function initFilters() {
+  // filters removed
+}
+
+function initDayTabs(days) {
+  const tabsEl = document.getElementById('day-tabs');
+  tabsEl.innerHTML = '';
+  days.forEach(day => {
+    const tab = document.createElement('div');
+    tab.className = 'day-tab' + (day === activeDay ? ' active' : '');
+    tab.textContent = day;
+    tab.addEventListener('click', () => {
+      activeDay = day;
+      tabsEl.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      render();
+    });
+    tabsEl.appendChild(tab);
+  });
+}
+
+document.getElementById('search').addEventListener('input', e => {
+  searchQuery = e.target.value.toLowerCase();
+  render();
+});
+
+
+
+// Helpers
+
+function inferType(title) {
+  if (!title) return "default";
+
+  const t = title.toLowerCase();
+
+  if (t.includes("keynote")) return "keynote";
+  if (t.includes("panel")) return "panel";
+  if (t.includes("fireside")) return "fireside";
+  if (t.includes("workshop")) return "workshop";
+  if (t.includes("roundtable")) return "roundtable";
+  if (t.includes("break")) return "break";
+  if (t.includes("launch")) return "launch";
+
+  return "default";
+}
+
+function trackClass(track) {
+  if (!track) return 'track-default';
+  const t = track.toLowerCase();
+  if (t === 'keynote')    return 'track-keynote';
+  if (t === 'design')     return 'track-design';
+  if (t === 'engineering')return 'track-engineering';
+  if (t === 'research')   return 'track-research';
+  if (t.includes('ai') || t.includes('tool')) return 'track-ai';
+  if (t === 'break')      return 'track-break';
+  return 'track-default';
+}
+
+
+function timeToMins(t) {
+  if (!t) return 0;
+  const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!m) return 0;
+  let h = parseInt(m[1]), mn = parseInt(m[2]);
+  const p = m[3].toUpperCase();
+  if (p === 'PM' && h !== 12) h += 12;
+  if (p === 'AM' && h === 12) h = 0;
+  return h * 60 + mn;
+}
+
+function minsToLabel(totalMins) {
+  let h = Math.floor(totalMins / 60);
+  const mn = totalMins % 60;
+  const period = h >= 12 ? 'PM' : 'AM';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${h}:${mn.toString().padStart(2,'0')} ${period}`;
+}
+
+function render() {
+  const wrapper = document.getElementById('timetable-container');
+  wrapper.innerHTML = '';
+
+  const daySessions = sessions.filter(s => s.day === activeDay);
+
+  // Compute overall visible time range in minutes
+  let minMins = Infinity, maxMins = -Infinity;
+  daySessions.forEach(s => {
+    const sm = timeToMins(s.startTime), em = timeToMins(s.endTime);
+    if (sm) minMins = Math.min(minMins, sm);
+    if (em) maxMins = Math.max(maxMins, em);
+  });
+  if (minMins === Infinity) return;
+
+  // Build half-hour axis markers (floor start to nearest 30, ceil end to nearest 30)
+  const axisStart = Math.floor(minMins / 30) * 30;
+  const axisEnd   = Math.ceil(maxMins / 30) * 30;
+  const axisMarkers = []; // e.g. [570, 600, 630, ...]
+  for (let m = axisStart; m <= axisEnd; m += 30) axisMarkers.push(m);
+  const numAxisCols = axisMarkers.length - 1; // number of 30-min cells
+  const totalMinutes = axisEnd - axisStart;
+
+  // Group locations by building with fixed building order
+  const buildingOrder = ['Bharat Mandapam', 'Bharat Mandapam - Expo Area', 'Sushma Swaraj Bhawan'];
+  const buildingMap = {};
+  buildingOrder.forEach(b => buildingMap[b] = []);
+
+  locations.forEach(loc => {
+    if (!daySessions.some(s => s.location === loc.name)) return;
+    const b = loc.sub || 'Other';
+    if (!buildingMap[b]) buildingMap[b] = [];
+    buildingMap[b].push(loc);
+  });
+
+  // Sort rooms within each building
+  function roomSortKey(name) {
+    // Extract all numbers from string for natural numeric sort
+    const nums = name.match(/\d+/g) || [];
+    const n = nums.map(x => parseInt(x).toString().padStart(6, '0')).join('-');
+    // Category order: Audi < Hall < L1/L2/L3 Meeting < Plenary < West Wing < Retreat < other
+    if (/audi/i.test(name))         return '1-' + n + '-' + name;
+    if (/^hall/i.test(name))        return '2-' + n + '-' + name;
+    if (/l\d+\s*plenary/i.test(name)) return '3-' + n + '-' + name;
+    if (/plenary/i.test(name))      return '4-' + n + '-' + name;
+    if (/meeting room/i.test(name)) return '5-' + n + '-' + name;
+    if (/west wing/i.test(name))    return '6-' + n + '-' + name;
+    if (/retreat/i.test(name))      return '7-' + n + '-' + name;
+    return '8-' + n + '-' + name;
+  }
+
+  Object.keys(buildingMap).forEach(b => {
+    buildingMap[b].sort((a, b2) => roomSortKey(a.name).localeCompare(roomSortKey(b2.name)));
+  });
+
+  function renderTable(locs, parentEl) {
+    const grid = document.createElement('div');
+    grid.className = 'timetable';
+    grid.style.gridTemplateColumns = `var(--row-header-w) repeat(${numAxisCols}, var(--cell-min-w))`;
+    // Don't set gridTemplateRows — let rows be implicit so each loc header pins its row
+
+    // Corner — explicit placement: row 1, col 1
+    const corner = document.createElement('div');
+    corner.className = 't-corner';
+    corner.textContent = 'Room';
+    corner.style.gridColumn = '1';
+    corner.style.gridRow = '1';
+    grid.appendChild(corner);
+
+    // Time axis headers — row 1, cols 2..N+1
+    for (let i = 0; i < numAxisCols; i++) {
+      const th = document.createElement('div');
+      th.className = 't-time-header';
+      if (i === numAxisCols - 1) th.style.borderRight = 'none';
+      th.textContent = minsToLabel(axisMarkers[i]);
+      th.style.gridColumn = `${i + 2}`;
+      th.style.gridRow = '1';
+      grid.appendChild(th);
+    }
+
+    // Rows — each loc is a separate grid row
+    const rowHasStack = new Set();
+    locs.forEach((loc, ri) => {
+      const gridRow = ri + 2; // row 2 = first data row
+      const isLast = ri === locs.length - 1;
+
+      // Row header — col 1
+      const rh = document.createElement('div');
+      rh.className = 't-loc-header';
+      rh.style.gridColumn = '1';
+      rh.style.gridRow = String(gridRow);
+      if (isLast) rh.style.borderBottom = 'none';
+      rh.innerHTML = `<div class="loc-name">${loc.name}</div>`;
+      grid.appendChild(rh);
+
+      const rowSessions = daySessions.filter(s => s.location === loc.name);
+
+      // Track which axis cols are covered by a session
+      const covered = new Set();
+      rowSessions.forEach(s => {
+        const sm = timeToMins(s.startTime);
+        const em = timeToMins(s.endTime);
+        for (let i = 0; i < numAxisCols; i++) {
+          if (sm < axisMarkers[i + 1] && em > axisMarkers[i]) covered.add(i);
+        }
+      });
+
+      // Group sessions into cells.
+      // First pass: compute each session's snapped col range.
+      // Then merge any sessions that time-overlap into a single cell,
+      // expanding the cell's col range to the union of all overlapping sessions.
+      // Sessions that are sequential (no time overlap) get separate cells.
+      const sessionCols = rowSessions.map(session => {
+        const sm = timeToMins(session.startTime);
+        const em = timeToMins(session.endTime);
+        let colStart = -1, colEnd = -1;
+        for (let i = 0; i < numAxisCols; i++) {
+          if (sm < axisMarkers[i + 1] && em > axisMarkers[i]) {
+            if (colStart === -1) colStart = i;
+            colEnd = i;
+          }
+        }
+        return { session, sm, em, colStart, colEnd };
+      }).filter(x => x.colStart !== -1);
+
+      // Sort by start time
+      sessionCols.sort((a, b) => a.sm - b.sm);
+
+      // Merge overlapping sessions into groups
+      const groups = [];
+      sessionCols.forEach(item => {
+        // Find an existing group that this session time-overlaps
+        let merged = false;
+        for (const g of groups) {
+          if (item.sm < g.em && item.em > g.sm) {
+            g.sm = Math.min(g.sm, item.sm);
+            g.em = Math.max(g.em, item.em);
+            g.colStart = Math.min(g.colStart, item.colStart);
+            g.colEnd   = Math.max(g.colEnd,   item.colEnd);
+            g.sessions.push(item.session);
+            merged = true;
+            break;
+          }
+        }
+        if (!merged) {
+          groups.push({ sm: item.sm, em: item.em, colStart: item.colStart, colEnd: item.colEnd, sessions: [item.session] });
+        }
+      });
+
+      // Re-check: after merging, the expanded time range of a group might now
+      // overlap another group — do a second merge pass
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let i = 0; i < groups.length; i++) {
+          for (let j = i + 1; j < groups.length; j++) {
+            if (groups[i].sm < groups[j].em && groups[i].em > groups[j].sm) {
+              groups[i].sm = Math.min(groups[i].sm, groups[j].sm);
+              groups[i].em = Math.max(groups[i].em, groups[j].em);
+              groups[i].colStart = Math.min(groups[i].colStart, groups[j].colStart);
+              groups[i].colEnd   = Math.max(groups[i].colEnd,   groups[j].colEnd);
+              groups[i].sessions.push(...groups[j].sessions);
+              groups.splice(j, 1);
+              changed = true;
+              break;
+            }
+          }
+          if (changed) break;
+        }
+      }
+
+      groups.forEach(({ colStart, colEnd, sessions: cellSessions }) => {
+        const gridColStart = colStart + 2;
+        const gridColEnd   = colEnd + 3;
+
+        const cell = document.createElement('div');
+        cell.className = 't-cell';
+        cell.style.gridColumn = `${gridColStart} / ${gridColEnd}`;
+        cell.style.gridRow = String(gridRow);
+        if (isLast) cell.style.borderBottom = 'none';
+        if (colEnd === numAxisCols - 1) cell.style.borderRight = 'none';
+        if (cellSessions.length > 1) { cell.classList.add('stacked'); rowHasStack.add(gridRow); }
+
+        cellSessions.forEach(session => {
+  const pill = document.createElement('div');
+
+  const inferredType = inferType(session.title);
+
+  pill.className = `
+    session-pill
+    ${trackClass(session.track)}
+    type-${inferredType}
+    ${matches(session) ? '' : 'dimmed'}
+  `;
+
+  pill.innerHTML = `
+    <div class="pill-title">${session.title}</div>
+    ${session.speakers?.length ? `<div class="pill-speakers">${session.speakers.slice(0, 2).join(', ')}${session.speakers.length > 2 ? ` +${session.speakers.length - 2}` : ''}</div>` : ''}
+  `;
+
+  pill.addEventListener('click', () => openModal(session));
+  cell.appendChild(pill);
+});
+
+        grid.appendChild(cell);
+      });
+
+      // Fill empty (uncovered) axis cols with empty cells
+      for (let i = 0; i < numAxisCols; i++) {
+        if (covered.has(i)) continue;
+        const cell = document.createElement('div');
+        cell.className = 't-cell empty';
+        cell.style.gridColumn = `${i + 2}`;
+        cell.style.gridRow = String(gridRow);
+        if (isLast) cell.style.borderBottom = 'none';
+        if (i === numAxisCols - 1) cell.style.borderRight = 'none';
+        grid.appendChild(cell);
+      }
+    });
+
+    // Set row heights — auto for rows with stacked cells, fixed otherwise
+    const rowHeights = locs.map((_, i) => rowHasStack.has(i + 2) ? 'auto' : 'var(--cell-h)');
+    grid.style.gridTemplateRows = `auto ${rowHeights.join(' ')}`;
+
+    parentEl.appendChild(grid);
+  }
+
+  buildingOrder.forEach(building => {
+    const section = document.createElement('div');
+    section.className = 'building-section';
+
+    const heading = document.createElement('div');
+    heading.className = 'building-heading';
+    heading.textContent = building;
+    section.appendChild(heading);
+
+    renderTable(buildingMap[building], section);
+    wrapper.appendChild(section);
+  });
+}
+
+// Modal
+function openModal(s) {
+  document.getElementById('m-track').textContent = s.track || '';
+  document.getElementById('m-title').textContent = s.title;
+  document.getElementById('m-desc').textContent  = s.description || '';
+  document.getElementById('m-speakers').innerHTML = (s.speakers||[])
+    .map(sp => `<span class="modal-speaker">${sp}</span>`).join('');
+  document.getElementById('m-meta').innerHTML = [
+    s.startTime && s.endTime
+      ? `<span class="modal-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          ${s.startTime} – ${s.endTime}
+        </span>` : '',
+    s.location
+      ? `<span class="modal-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${s.location}${s.building && s.building !== s.location ? ' · ' + s.building : ''}
+        </span>` : '',
+  ].join('');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+</script>
+</body>
+</html>
